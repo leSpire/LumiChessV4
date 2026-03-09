@@ -101,14 +101,22 @@ export function useChessGame(initialFen?: string) {
       return;
     }
 
-    requestMove(selectedSquare, square);
+    const moved = requestMove(selectedSquare, square);
+    if (!moved) {
+      const piece = game.get(square);
+      if (piece && piece.color === game.turn()) {
+        setSelectedSquare(square);
+      }
+    }
   };
 
   const setFromPiecePointer = (square: Square) => {
     const piece = game.get(square);
     if (piece && piece.color === game.turn()) {
       setSelectedSquare(square);
+      return true;
     }
+    return false;
   };
 
   const reset = () => {

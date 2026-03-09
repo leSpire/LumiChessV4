@@ -26,13 +26,14 @@ export interface PromotionDialogState {
 
 export interface ChessBoardProps {
   orientation: BoardOrientation;
+  turn: Color;
   selectedSquare: Square | null;
   legalTargets: Square[];
   inCheckSquare: Square | null;
   lastMove: LastMove | null;
   pieces: PieceOnBoard[];
   onSquareClick: (square: Square) => void;
-  onPiecePointerDown: (square: Square) => void;
+  onPiecePointerDown: (square: Square) => boolean;
   onPieceDrop: (from: Square, to: Square) => void;
 }
 

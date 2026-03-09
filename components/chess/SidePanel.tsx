@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type { MoveHistoryEntry } from '@/types/chess';
 
 interface SidePanelProps {
@@ -23,6 +24,13 @@ export function SidePanel({
   onLoadFen,
   onLoadPgn
 }: SidePanelProps) {
+  const [fenInput, setFenInput] = useState(fen);
+  const [pgnInput, setPgnInput] = useState(pgn);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  useEffect(() => setFenInput(fen), [fen]);
+  useEffect(() => setPgnInput(pgn), [pgn]);
+
   return (
     <aside className="flex h-full min-h-[520px] w-full max-w-xl flex-col rounded-3xl border border-[#c6933d38] bg-gradient-to-b from-[#14110d] to-[#0b0907] p-5 shadow-board">
       <header className="mb-4">
@@ -47,7 +55,7 @@ export function SidePanel({
       <section className="mb-4 flex-1 overflow-hidden rounded-2xl border border-[#c6933d2e] bg-[#0f0c09]">
         <div className="max-h-[260px] overflow-y-auto p-3">
           <table className="w-full text-left text-sm">
-            <thead className="text-[#ba9862]">
+            <thead className="sticky top-0 bg-[#0f0c09] text-[#ba9862]">
               <tr>
                 <th className="pb-2 font-medium">#</th>
                 <th className="pb-2 font-medium">Blancs</th>
@@ -69,24 +77,35 @@ export function SidePanel({
 
       <section className="space-y-3">
         <label className="block text-xs text-[#cfac74]">FEN courant</label>
-        <textarea
-          readOnly
-          value={fen}
-          className="h-20 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-xs text-[#f4e4c9]"
-        />
+        <textarea value={fenInput} onChange={(evt) => setFenInput(evt.target.value)} className="h-20 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-xs text-[#f4e4c9]" />
 
-        <details className="rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-xs text-[#f4e4c9]">
-          <summary className="cursor-pointer text-[#d7b37a]">PGN (lecture / export)</summary>
-          <textarea readOnly value={pgn} className="mt-2 h-20 w-full rounded-lg bg-[#090705] p-2" />
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => onLoadFen(fen)} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">
-              Recharger FEN
-            </button>
-            <button type="button" onClick={() => onLoadPgn(pgn)} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">
-              Recharger PGN
-            </button>
-          </div>
-        </details>
+        <label className="block text-xs text-[#cfac74]">PGN (style Lichess, import/export)</label>
+        <textarea value={pgnInput} onChange={(evt) => setPgnInput(evt.target.value)} className="h-28 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-xs text-[#f4e4c9]" />
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => {
+              const ok = onLoadFen(fenInput.trim());
+              setFeedback(ok ? 'FEN chargé.' : 'FEN invalide.');
+            }}
+            className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]"
+          >
+            Charger FEN
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const ok = onLoadPgn(pgnInput.trim());
+              setFeedback(ok ? 'PGN chargé.' : 'PGN invalide.');
+            }}
+            className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]"
+          >
+            Charger PGN
+          </button>
+        </div>
+
+        {feedback && <p className="text-xs text-[#d7b37a]">{feedback}</p>}
       </section>
     </aside>
   );
