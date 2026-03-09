@@ -14,6 +14,17 @@ interface DragState {
   y: number;
 }
 
+interface RightDragState {
+  from: Square;
+  x: number;
+  y: number;
+}
+
+interface AnnotationArrow {
+  from: Square;
+  to: Square;
+}
+
 function pointerToSquare(
   evt: PointerEvent<HTMLDivElement>,
   boardElement: HTMLDivElement,
@@ -35,6 +46,7 @@ function pointerToSquare(
 
 export function ChessBoard({
   orientation,
+  turn,
   selectedSquare,
   legalTargets,
   inCheckSquare,
@@ -46,6 +58,9 @@ export function ChessBoard({
 }: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const [rightDragState, setRightDragState] = useState<RightDragState | null>(null);
+  const [arrows, setArrows] = useState<AnnotationArrow[]>([]);
+  const [markedSquares, setMarkedSquares] = useState<Square[]>([]);
 
   const files = getDisplayFiles(orientation);
   const ranks = getDisplayRanks(orientation);
@@ -58,26 +73,94 @@ export function ChessBoard({
     return { col, row };
   };
 
+  const squareCenter = (square: Square) => {
+    const { col, row } = piecePosition(square);
+    return {
+      x: (col + 0.5) * 12.5,
+      y: (row + 0.5) * 12.5
+    };
+  };
+
+  const previewArrow = useMemo(() => {
+    if (!rightDragState || !boardRef.current) return null;
+    const from = squareCenter(rightDragState.from);
+    return {
+      from,
+      to: {
+        x: (rightDragState.x / boardRef.current.clientWidth) * 100,
+        y: (rightDragState.y / boardRef.current.clientHeight) * 100
+      }
+    };
+  }, [rightDragState]);
+
   return (
     <section className="w-full max-w-[min(92vw,760px)]" aria-label="Échiquier LumiChess">
       <div className="relative rounded-3xl border border-[#c6933d33] bg-gradient-to-b from-[#1b1510] to-[#0d0b08] p-3 shadow-board">
         <div
           ref={boardRef}
           className="relative grid aspect-square w-full grid-cols-8 overflow-hidden rounded-2xl border border-[#d3a55b33]"
+          onContextMenu={(evt) => evt.preventDefault()}
           onPointerMove={(evt) => {
-            if (!dragState || !boardRef.current) return;
+            if (!boardRef.current) return;
+
+            if (dragState) {
+              const rect = boardRef.current.getBoundingClientRect();
+              setDragState({
+                ...dragState,
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+              });
+            }
+
+            if (rightDragState) {
+              const rect = boardRef.current.getBoundingClientRect();
+              setRightDragState({
+                ...rightDragState,
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+              });
+            }
+          }}
+          onPointerDown={(evt) => {
+            if (evt.button !== 2 || !boardRef.current) return;
+            const from = pointerToSquare(evt, boardRef.current, orientation);
+            if (!from) return;
             const rect = boardRef.current.getBoundingClientRect();
-            setDragState({
-              ...dragState,
+            evt.currentTarget.setPointerCapture(evt.pointerId);
+            setRightDragState({
+              from,
               x: evt.clientX - rect.left,
               y: evt.clientY - rect.top
             });
           }}
           onPointerUp={(evt) => {
-            if (!dragState || !boardRef.current) return;
-            const to = pointerToSquare(evt, boardRef.current, orientation);
-            if (to) onPieceDrop(dragState.from, to);
-            setDragState(null);
+            if (!boardRef.current) return;
+
+            if (dragState && evt.button === 0) {
+              const to = pointerToSquare(evt, boardRef.current, orientation);
+              if (to) onPieceDrop(dragState.from, to);
+              setDragState(null);
+            }
+
+            if (rightDragState && evt.button === 2) {
+              const to = pointerToSquare(evt, boardRef.current, orientation);
+              if (to) {
+                if (to === rightDragState.from) {
+                  setMarkedSquares((prev) =>
+                    prev.includes(to) ? prev.filter((sq) => sq !== to) : [...prev, to]
+                  );
+                } else {
+                  setArrows((prev) => {
+                    const exists = prev.some((arrow) => arrow.from === rightDragState.from && arrow.to === to);
+                    if (exists) {
+                      return prev.filter((arrow) => !(arrow.from === rightDragState.from && arrow.to === to));
+                    }
+                    return [...prev, { from: rightDragState.from, to }];
+                  });
+                }
+              }
+              setRightDragState(null);
+            }
           }}
         >
           {Array.from({ length: 64 }).map((_, index) => {
@@ -91,6 +174,9 @@ export function ChessBoard({
             const isTarget = legalTargetSet.has(square);
             const isLastMove = lastMove?.from === square || lastMove?.to === square;
             const isCheck = inCheckSquare === square;
+            const isMarked = markedSquares.includes(square);
+            const targetPiece = pieces.find((piece) => piece.square === square);
+            const isCaptureTarget = Boolean(isTarget && targetPiece && targetPiece.color !== turn);
 
             return (
               <button
@@ -99,8 +185,8 @@ export function ChessBoard({
                 className={clsx(
                   'group relative flex items-center justify-center transition-colors duration-150',
                   isLightSquare(square)
-                    ? 'bg-gradient-to-br from-[#e7d2ad] to-[#d6bf99]'
-                    : 'bg-gradient-to-br from-[#7d5c34] to-[#5c4326]'
+                    ? 'bg-gradient-to-br from-[#f2e0be] to-[#d3b88e]'
+                    : 'bg-gradient-to-br from-[#8a6439] to-[#6a4a2b]'
                 )}
                 onClick={() => onSquareClick(square)}
                 aria-label={`Case ${square}`}
@@ -108,15 +194,55 @@ export function ChessBoard({
                 {isLastMove && <span className="pointer-events-none absolute inset-0 bg-[#e3b15e33]" />}
                 {isSelected && <span className="pointer-events-none absolute inset-1 rounded-sm border-2 border-[#f1cd8a] shadow-glow" />}
                 {isCheck && <span className="pointer-events-none absolute inset-0 bg-[#d84c4c80]" />}
-                {isTarget && (
-                  <span className="pointer-events-none absolute h-3.5 w-3.5 rounded-full bg-[#f0d199cc] shadow-[0_0_16px_rgba(240,209,153,0.65)]" />
+                {isMarked && <span className="pointer-events-none absolute inset-2 rounded-full border-4 border-[#3ea9ffaa]" />}
+                {isTarget && !isCaptureTarget && (
+                  <span className="pointer-events-none absolute h-4 w-4 rounded-full border border-[#4b3a24aa] bg-[#3e2c18aa] shadow-[0_0_14px_rgba(255,220,155,0.6)]" />
                 )}
+                {isCaptureTarget && <span className="pointer-events-none absolute inset-[10%] rounded-full border-4 border-[#f6d8a5dd]" />}
                 {(row === 7 || row === 0 || col === 0 || col === 7) && (
                   <span className="pointer-events-none absolute inset-0 ring-1 ring-black/5" />
                 )}
               </button>
             );
           })}
+
+          <svg className="pointer-events-none absolute inset-0 z-[8]" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <marker id="arrowhead" markerWidth="5" markerHeight="4" refX="4.2" refY="2" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L5,2 L0,4 Z" fill="#57b8ffcc" />
+              </marker>
+            </defs>
+            {arrows.map((arrow) => {
+              const from = squareCenter(arrow.from);
+              const to = squareCenter(arrow.to);
+              return (
+                <line
+                  key={`${arrow.from}-${arrow.to}`}
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  stroke="#57b8ffcc"
+                  strokeWidth="1.8"
+                  markerEnd="url(#arrowhead)"
+                  strokeLinecap="round"
+                />
+              );
+            })}
+            {previewArrow && (
+              <line
+                x1={previewArrow.from.x}
+                y1={previewArrow.from.y}
+                x2={previewArrow.to.x}
+                y2={previewArrow.to.y}
+                stroke="#57b8ff88"
+                strokeWidth="1.4"
+                markerEnd="url(#arrowhead)"
+                strokeLinecap="round"
+                strokeDasharray="2.5 2"
+              />
+            )}
+          </svg>
 
           {pieces.map((piece) => {
             const { row, col } = piecePosition(piece.square);
@@ -140,12 +266,13 @@ export function ChessBoard({
                     : { width, left, top }
                 }
                 animate={{ left, top }}
-                transition={{ type: 'spring', stiffness: 400, damping: 32, mass: 0.35 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 34, mass: 0.3 }}
                 onPointerDown={(evt) => {
-                  if (!boardRef.current) return;
+                  if (evt.button !== 0 || !boardRef.current) return;
+                  const canMove = onPiecePointerDown(piece.square);
+                  if (!canMove) return;
                   const rect = boardRef.current.getBoundingClientRect();
                   evt.currentTarget.setPointerCapture(evt.pointerId);
-                  onPiecePointerDown(piece.square);
                   setDragState({
                     from: piece.square,
                     x: evt.clientX - rect.left,
@@ -159,37 +286,31 @@ export function ChessBoard({
             );
           })}
 
-          {FILES.map((file, index) => {
-            const display = orientation === 'w' ? file : FILES[7 - index];
-            return (
-              <span
-                key={`${file}-coord`}
-                className="pointer-events-none absolute bottom-1 text-[10px] font-medium uppercase tracking-wide text-black/60"
-                style={{ left: `${index * 12.5 + 1.3}%` }}
-              >
-                {display}
-              </span>
-            );
-          })}
+          {files.map((file, index) => (
+            <span
+              key={`${file}-coord`}
+              className="pointer-events-none absolute bottom-1 text-[10px] font-medium uppercase tracking-wide text-black/60"
+              style={{ left: `${index * 12.5 + 1.3}%` }}
+            >
+              {file}
+            </span>
+          ))}
 
-          {RANKS.map((rank, index) => {
-            const display = orientation === 'w' ? RANKS[7 - index] : rank;
-            return (
-              <span
-                key={`${rank}-coord`}
-                className="pointer-events-none absolute right-1 text-[10px] font-medium tracking-wide text-black/60"
-                style={{ top: `${index * 12.5 + 1.2}%` }}
-              >
-                {display}
-              </span>
-            );
-          })}
+          {ranks.map((rank, index) => (
+            <span
+              key={`${rank}-coord`}
+              className="pointer-events-none absolute right-1 text-[10px] font-medium tracking-wide text-black/60"
+              style={{ top: `${index * 12.5 + 1.2}%` }}
+            >
+              {rank}
+            </span>
+          ))}
         </div>
       </div>
 
       <div className="mt-3 flex items-center justify-between px-1 text-xs text-[#ddc08f]">
         <span>Vue: {orientation === 'w' ? 'Blancs' : 'Noirs'}</span>
-        <span>Drag & drop + click-to-move</span>
+        <span>Clic droit: rond/flèche · Drag & drop + clic</span>
       </div>
     </section>
   );

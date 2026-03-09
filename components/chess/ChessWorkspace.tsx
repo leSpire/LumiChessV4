@@ -13,6 +13,7 @@ export function ChessWorkspace() {
       <div className="relative">
         <ChessBoard
           orientation={game.orientation}
+          turn={game.turn}
           selectedSquare={game.selectedSquare}
           legalTargets={game.legalTargets}
           inCheckSquare={game.checkSquare}
