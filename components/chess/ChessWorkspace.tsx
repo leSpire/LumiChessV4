@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { ChessBoard } from '@/components/chess/ChessBoard';
 import { PromotionDialog } from '@/components/chess/PromotionDialog';
 import { SidePanel } from '@/components/chess/SidePanel';
-import { useChessGame } from '@/hooks/useChessGame';
+import { usePlayVsAI } from '@/hooks/usePlayVsAI';
 
 export function ChessWorkspace() {
-  const game = useChessGame();
+  const ai = usePlayVsAI();
+  const game = ai.game;
   const [pieceTheme, setPieceTheme] = useState('classic');
   const [boardTheme, setBoardTheme] = useState('lumi-classic');
 
@@ -38,9 +39,9 @@ export function ChessWorkspace() {
           inCheckSquare={game.checkSquare}
           lastMove={game.lastMove}
           pieces={game.pieces}
-          onSquareClick={game.handleSquareAction}
-          onPiecePointerDown={game.setFromPiecePointer}
-          onPieceDrop={game.requestMove}
+          onSquareClick={ai.handleSquareAction}
+          onPiecePointerDown={ai.handlePiecePointer}
+          onPieceDrop={ai.requestPlayerMove}
           pieceTheme={pieceTheme}
           boardTheme={boardTheme}
         />
@@ -66,6 +67,24 @@ export function ChessWorkspace() {
         onPieceThemeChange={setPieceTheme}
         boardTheme={boardTheme}
         onBoardThemeChange={setBoardTheme}
+        aiEnabled={ai.enabled}
+        playerColor={ai.playerColor}
+        aiLevel={ai.level}
+        aiLevels={ai.levels}
+        engineStatus={ai.engine.status}
+        engineError={ai.engine.error}
+        engineOutput={ai.engine.output}
+        bestMoveLabel={ai.bestMoveLabel}
+        showBestMove={ai.showBestMove}
+        onToggleAiEnabled={ai.setEnabled}
+        onPlayerColorChange={(color) => {
+          ai.setPlayerColor(color);
+          game.setOrientation(color);
+        }}
+        onAiLevelChange={(value) => ai.setLevel(value as typeof ai.level)}
+        onNewAiGame={() => ai.startNewAiGame(ai.playerColor)}
+        onResetAi={ai.resetVsAi}
+        onToggleBestMove={ai.setShowBestMove}
       />
     </section>
   );
