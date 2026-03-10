@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { MoveHistoryEntry } from '@/types/chess';
+import { PIECE_THEMES } from '@/lib/pieceThemes';
 
 interface SidePanelProps {
   status: string;
@@ -12,6 +13,8 @@ interface SidePanelProps {
   onToggleOrientation: () => void;
   onLoadFen: (fen: string) => boolean;
   onLoadPgn: (pgn: string) => boolean;
+  pieceTheme: string;
+  onPieceThemeChange: (themeId: string) => void;
 }
 
 export function SidePanel({
@@ -22,7 +25,9 @@ export function SidePanel({
   onReset,
   onToggleOrientation,
   onLoadFen,
-  onLoadPgn
+  onLoadPgn,
+  pieceTheme,
+  onPieceThemeChange
 }: SidePanelProps) {
   const [fenInput, setFenInput] = useState(fen);
   const [pgnInput, setPgnInput] = useState(pgn);
@@ -51,6 +56,25 @@ export function SidePanel({
           Inverser la vue
         </button>
       </div>
+
+
+      <section className="mb-4 rounded-2xl border border-[#c6933d2e] bg-[#0f0c09] p-3">
+        <label className="mb-2 block text-xs text-[#cfac74]">Style des pièces</label>
+        <select
+          value={pieceTheme}
+          onChange={(evt) => onPieceThemeChange(evt.target.value)}
+          className="w-full rounded-lg border border-[#c6933d42] bg-[#0c0907] px-2 py-2 text-sm text-[#f4e4c9]"
+        >
+          {PIECE_THEMES.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-2 text-[11px] text-[#b99663]">
+          Sources sous licence compatible (principalement AGPL-3.0 via Lichess).
+        </p>
+      </section>
 
       <section className="mb-4 flex-1 overflow-hidden rounded-2xl border border-[#c6933d2e] bg-[#0f0c09]">
         <div className="max-h-[260px] overflow-y-auto p-3">
