@@ -1,18 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { MoveHistoryEntry } from '@/types/chess';
+import { useEffect, useMemo, useState } from 'react';
 import { PIECE_THEMES } from '@/lib/pieceThemes';
+import type { MoveHistoryEntry } from '@/types/chess';
+import type { GameError, PgnMetadata, ServiceResult } from '@/types/game';
 
 interface SidePanelProps {
   status: string;
   fen: string;
   pgn: string;
   history: MoveHistoryEntry[];
+  currentIndex: number;
+  positionsCount: number;
+  metadata: PgnMetadata;
+  error: GameError | null;
   onReset: () => void;
   onToggleOrientation: () => void;
-  onLoadFen: (fen: string) => boolean;
-  onLoadPgn: (pgn: string) => boolean;
+  onLoadFen: (fen: string) => ServiceResult<unknown>;
+  onLoadPgn: (pgn: string) => ServiceResult<unknown>;
+  onNavigate: (action: 'start' | 'prev' | 'next' | 'end') => void;
+  onMoveToIndex: (index: number) => void;
   pieceTheme: string;
   onPieceThemeChange: (themeId: string) => void;
 }
@@ -22,10 +29,16 @@ export function SidePanel({
   fen,
   pgn,
   history,
+  currentIndex,
+  positionsCount,
+  metadata,
+  error,
   onReset,
   onToggleOrientation,
   onLoadFen,
   onLoadPgn,
+  onNavigate,
+  onMoveToIndex,
   pieceTheme,
   onPieceThemeChange
 }: SidePanelProps) {
@@ -36,27 +49,43 @@ export function SidePanel({
   useEffect(() => setFenInput(fen), [fen]);
   useEffect(() => setPgnInput(pgn), [pgn]);
 
+  const metadataText = useMemo(() => {
+    const keys: Array<keyof PgnMetadata> = ['Event', 'Site', 'Date', 'Round', 'White', 'Black', 'Result'];
+    return keys
+      .filter((key) => metadata[key])
+      .map((key) => `${key}: ${metadata[key]}`)
+      .join(' · ');
+  }, [metadata]);
+
+  const copyToClipboard = async (value: string, label: 'FEN' | 'PGN') => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setFeedback(`${label} copié.`);
+    } catch {
+      setFeedback(`Impossible de copier ${label}.`);
+    }
+  };
+
   return (
     <aside className="flex h-full min-h-[520px] w-full max-w-xl flex-col rounded-3xl border border-[#c6933d38] bg-gradient-to-b from-[#14110d] to-[#0b0907] p-5 shadow-board">
       <header className="mb-4">
         <p className="text-xs uppercase tracking-[0.2em] text-[#c6933d]">LumiChess Engine Board</p>
-        <h2 className="mt-1 text-xl font-semibold text-[#f6ead6]">Fondation de partie</h2>
+        <h2 className="mt-1 text-xl font-semibold text-[#f6ead6]">Fondation FEN / PGN</h2>
         <p className="mt-2 rounded-lg border border-[#c6933d44] bg-[#0f0c09] px-3 py-2 text-sm text-[#ecd6ae]">{status}</p>
       </header>
 
-      <div className="mb-4 flex gap-2">
-        <button type="button" onClick={onReset} className="rounded-xl border border-[#d9ab5d66] px-3 py-2 text-sm text-[#f4e1be] transition hover:bg-[#d9ab5d22]">
+      <div className="mb-4 flex flex-wrap gap-2 text-sm">
+        <button type="button" onClick={onReset} className="rounded-xl border border-[#d9ab5d66] px-3 py-2 text-[#f4e1be] transition hover:bg-[#d9ab5d22]">
           Reset
         </button>
         <button
           type="button"
           onClick={onToggleOrientation}
-          className="rounded-xl border border-[#d9ab5d40] px-3 py-2 text-sm text-[#f4e1be] transition hover:bg-[#d9ab5d22]"
+          className="rounded-xl border border-[#d9ab5d40] px-3 py-2 text-[#f4e1be] transition hover:bg-[#d9ab5d22]"
         >
           Inverser la vue
         </button>
       </div>
-
 
       <section className="mb-4 rounded-2xl border border-[#c6933d2e] bg-[#0f0c09] p-3">
         <label className="mb-2 block text-xs text-[#cfac74]">Style des pièces</label>
@@ -71,13 +100,25 @@ export function SidePanel({
             </option>
           ))}
         </select>
-        <p className="mt-2 text-[11px] text-[#b99663]">
-          Sources sous licence compatible (principalement AGPL-3.0 via Lichess).
-        </p>
+      </section>
+
+      <section className="mb-4 rounded-2xl border border-[#c6933d2e] bg-[#0f0c09] p-3">
+        <div className="mb-2 flex items-center justify-between text-xs text-[#d2af74]">
+          <span>Timeline</span>
+          <span>
+            Position {currentIndex}/{Math.max(positionsCount - 1, 0)}
+          </span>
+        </div>
+        <div className="grid grid-cols-4 gap-2 text-xs text-[#f1dfbf]">
+          <button type="button" onClick={() => onNavigate('start')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">⏮</button>
+          <button type="button" onClick={() => onNavigate('prev')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">◀</button>
+          <button type="button" onClick={() => onNavigate('next')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">▶</button>
+          <button type="button" onClick={() => onNavigate('end')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">⏭</button>
+        </div>
       </section>
 
       <section className="mb-4 flex-1 overflow-hidden rounded-2xl border border-[#c6933d2e] bg-[#0f0c09]">
-        <div className="max-h-[260px] overflow-y-auto p-3">
+        <div className="max-h-[220px] overflow-y-auto p-3">
           <table className="w-full text-left text-sm">
             <thead className="sticky top-0 bg-[#0f0c09] text-[#ba9862]">
               <tr>
@@ -90,8 +131,32 @@ export function SidePanel({
               {history.map((entry) => (
                 <tr key={entry.moveNumber} className="border-t border-[#ffffff12]">
                   <td className="py-1.5 pr-1 text-[#b79867]">{entry.moveNumber}.</td>
-                  <td className="py-1.5">{entry.white?.san ?? '—'}</td>
-                  <td className="py-1.5">{entry.black?.san ?? '—'}</td>
+                  <td>
+                    {entry.white ? (
+                      <button
+                        type="button"
+                        onClick={() => entry.white && onMoveToIndex(entry.white.ply)}
+                        className="rounded px-1.5 py-0.5 hover:bg-[#d9ab5d1f]"
+                      >
+                        {entry.white.san}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td>
+                    {entry.black ? (
+                      <button
+                        type="button"
+                        onClick={() => entry.black && onMoveToIndex(entry.black.ply)}
+                        className="rounded px-1.5 py-0.5 hover:bg-[#d9ab5d1f]"
+                      >
+                        {entry.black.san}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -99,37 +164,45 @@ export function SidePanel({
         </div>
       </section>
 
-      <section className="space-y-3">
-        <label className="block text-xs text-[#cfac74]">FEN courant</label>
-        <textarea value={fenInput} onChange={(evt) => setFenInput(evt.target.value)} className="h-20 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-xs text-[#f4e4c9]" />
-
-        <label className="block text-xs text-[#cfac74]">PGN (style Lichess, import/export)</label>
-        <textarea value={pgnInput} onChange={(evt) => setPgnInput(evt.target.value)} className="h-28 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-xs text-[#f4e4c9]" />
-
-        <div className="grid grid-cols-2 gap-2 text-xs">
+      <section className="space-y-3 text-xs">
+        <label className="block text-[#cfac74]">Import / Export FEN</label>
+        <textarea value={fenInput} onChange={(evt) => setFenInput(evt.target.value)} className="h-20 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-[#f4e4c9]" />
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => {
-              const ok = onLoadFen(fenInput.trim());
-              setFeedback(ok ? 'FEN chargé.' : 'FEN invalide.');
+              const result = onLoadFen(fenInput.trim());
+              setFeedback(result.ok ? 'FEN chargé.' : result.error?.message ?? 'FEN invalide.');
             }}
             className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]"
           >
             Charger FEN
           </button>
+          <button type="button" onClick={() => copyToClipboard(fen, 'FEN')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">
+            Copier FEN
+          </button>
+        </div>
+
+        <label className="block text-[#cfac74]">Import / Export PGN</label>
+        <textarea value={pgnInput} onChange={(evt) => setPgnInput(evt.target.value)} className="h-24 w-full rounded-xl border border-[#c6933d2e] bg-[#0c0907] p-2 text-[#f4e4c9]" />
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => {
-              const ok = onLoadPgn(pgnInput.trim());
-              setFeedback(ok ? 'PGN chargé.' : 'PGN invalide.');
+              const result = onLoadPgn(pgnInput.trim());
+              setFeedback(result.ok ? 'PGN chargé.' : result.error?.message ?? 'PGN invalide.');
             }}
             className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]"
           >
             Charger PGN
           </button>
+          <button type="button" onClick={() => copyToClipboard(pgn, 'PGN')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">
+            Copier PGN
+          </button>
         </div>
 
-        {feedback && <p className="text-xs text-[#d7b37a]">{feedback}</p>}
+        {metadataText && <p className="rounded-lg border border-[#c6933d2a] bg-[#17110b] px-2 py-1 text-[#cba56e]">{metadataText}</p>}
+        {(feedback || error) && <p className="text-[#d7b37a]">{feedback ?? error?.message}</p>}
       </section>
     </aside>
   );

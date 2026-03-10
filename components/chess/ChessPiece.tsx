@@ -8,7 +8,7 @@ import { getPieceAssetUrl } from '@/lib/pieceThemes';
 interface ChessPieceProps {
   type: PieceSymbol;
   color: Color;
-  themeId: string;
+  themeId?: string;
   isDragging?: boolean;
 }
 
@@ -65,7 +65,7 @@ function ClassicPiece({ type, color }: { type: PieceSymbol; color: Color }) {
   );
 }
 
-export function ChessPiece({ type, color, themeId, isDragging }: ChessPieceProps) {
+export function ChessPiece({ type, color, themeId = "classic", isDragging }: ChessPieceProps) {
   const [errored, setErrored] = useState(false);
   const pieceUrl = !errored ? getPieceAssetUrl(themeId, color, type) : null;
 
