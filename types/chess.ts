@@ -37,6 +37,7 @@ export interface ChessBoardProps {
   onPiecePointerDown: (square: Square) => boolean;
   onPieceDrop: (from: Square, to: Square) => void;
   pieceTheme: string;
+  boardTheme: string;
 }
 
 export interface MoveHistoryEntry extends MoveHistoryRow {}

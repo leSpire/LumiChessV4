@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { BOARD_THEMES } from '@/lib/boardThemes';
 import { PIECE_THEMES } from '@/lib/pieceThemes';
 import type { MoveHistoryEntry } from '@/types/chess';
 import type { GameError, PgnMetadata, ServiceResult } from '@/types/game';
@@ -22,6 +23,8 @@ interface SidePanelProps {
   onMoveToIndex: (index: number) => void;
   pieceTheme: string;
   onPieceThemeChange: (themeId: string) => void;
+  boardTheme: string;
+  onBoardThemeChange: (themeId: string) => void;
 }
 
 export function SidePanel({
@@ -40,7 +43,9 @@ export function SidePanel({
   onNavigate,
   onMoveToIndex,
   pieceTheme,
-  onPieceThemeChange
+  onPieceThemeChange,
+  boardTheme,
+  onBoardThemeChange
 }: SidePanelProps) {
   const [fenInput, setFenInput] = useState(fen);
   const [pgnInput, setPgnInput] = useState(pgn);
@@ -48,6 +53,32 @@ export function SidePanel({
 
   useEffect(() => setFenInput(fen), [fen]);
   useEffect(() => setPgnInput(pgn), [pgn]);
+
+  useEffect(() => {
+    const handleKeyDown = (evt: KeyboardEvent) => {
+      const target = evt.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      const isTyping =
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        target?.isContentEditable;
+
+      if (isTyping) return;
+
+      if (evt.key === 'ArrowLeft') {
+        evt.preventDefault();
+        onNavigate('prev');
+      }
+
+      if (evt.key === 'ArrowRight') {
+        evt.preventDefault();
+        onNavigate('next');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onNavigate]);
 
   const metadataText = useMemo(() => {
     const keys: Array<keyof PgnMetadata> = ['Event', 'Site', 'Date', 'Round', 'White', 'Black', 'Result'];
@@ -100,6 +131,19 @@ export function SidePanel({
             </option>
           ))}
         </select>
+
+        <label className="mb-2 mt-3 block text-xs text-[#cfac74]">Style de l’échiquier</label>
+        <select
+          value={boardTheme}
+          onChange={(evt) => onBoardThemeChange(evt.target.value)}
+          className="w-full rounded-lg border border-[#c6933d42] bg-[#0c0907] px-2 py-2 text-sm text-[#f4e4c9]"
+        >
+          {BOARD_THEMES.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.label}
+            </option>
+          ))}
+        </select>
       </section>
 
       <section className="mb-4 rounded-2xl border border-[#c6933d2e] bg-[#0f0c09] p-3">
@@ -111,10 +155,11 @@ export function SidePanel({
         </div>
         <div className="grid grid-cols-4 gap-2 text-xs text-[#f1dfbf]">
           <button type="button" onClick={() => onNavigate('start')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">⏮</button>
-          <button type="button" onClick={() => onNavigate('prev')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">◀</button>
-          <button type="button" onClick={() => onNavigate('next')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">▶</button>
+          <button type="button" onClick={() => onNavigate('prev')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">←</button>
+          <button type="button" onClick={() => onNavigate('next')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">→</button>
           <button type="button" onClick={() => onNavigate('end')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">⏭</button>
         </div>
+        <p className="mt-2 text-[11px] text-[#b99463]">Raccourcis clavier: ← coup précédent · → coup suivant</p>
       </section>
 
       <section className="mb-4 flex-1 overflow-hidden rounded-2xl border border-[#c6933d2e] bg-[#0f0c09]">

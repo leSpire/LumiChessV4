@@ -1,10 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { type PointerEvent, useMemo, useRef, useState } from 'react';
+import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { Square } from 'chess.js';
 import clsx from 'clsx';
 import { ChessPiece } from '@/components/chess/ChessPiece';
+import { getBoardTheme } from '@/lib/boardThemes';
 import { coordsToSquare, getDisplayFiles, getDisplayRanks, isLightSquare, squareToCoords } from '@/lib/chessboard';
 import type { ChessBoardProps } from '@/types/chess';
 
@@ -55,7 +56,8 @@ export function ChessBoard({
   onSquareClick,
   onPiecePointerDown,
   onPieceDrop,
-  pieceTheme
+  pieceTheme,
+  boardTheme
 }: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -66,6 +68,7 @@ export function ChessBoard({
   const files = getDisplayFiles(orientation);
   const ranks = getDisplayRanks(orientation);
   const legalTargetSet = useMemo(() => new Set(legalTargets), [legalTargets]);
+  const selectedBoardTheme = getBoardTheme(boardTheme);
 
   const piecePosition = (square: Square) => {
     const { file, rank } = squareToCoords(square);
@@ -81,6 +84,31 @@ export function ChessBoard({
       y: (row + 0.5) * 12.5
     };
   };
+
+
+  useEffect(() => {
+    if (!dragState || !boardRef.current) return;
+
+    const boardElement = boardRef.current;
+
+    const updatePointer = (clientX: number, clientY: number) => {
+      const rect = boardElement.getBoundingClientRect();
+      setDragState((prev) =>
+        prev
+          ? {
+              ...prev,
+              x: clientX - rect.left,
+              y: clientY - rect.top
+            }
+          : null
+      );
+    };
+
+    const handlePointerMove = (evt: globalThis.PointerEvent) => updatePointer(evt.clientX, evt.clientY);
+
+    window.addEventListener('pointermove', handlePointerMove);
+    return () => window.removeEventListener('pointermove', handlePointerMove);
+  }, [dragState]);
 
   const previewArrow = useMemo(() => {
     if (!rightDragState || !boardRef.current) return null;
@@ -103,15 +131,6 @@ export function ChessBoard({
           onContextMenu={(evt) => evt.preventDefault()}
           onPointerMove={(evt) => {
             if (!boardRef.current) return;
-
-            if (dragState) {
-              const rect = boardRef.current.getBoundingClientRect();
-              setDragState({
-                ...dragState,
-                x: evt.clientX - rect.left,
-                y: evt.clientY - rect.top
-              });
-            }
 
             if (rightDragState) {
               const rect = boardRef.current.getBoundingClientRect();
@@ -186,8 +205,8 @@ export function ChessBoard({
                 className={clsx(
                   'group relative flex items-center justify-center transition-all duration-200',
                   isLightSquare(square)
-                    ? 'bg-gradient-to-br from-[#f2e0be] to-[#d3b88e]'
-                    : 'bg-gradient-to-br from-[#8a6439] to-[#6a4a2b]'
+                    ? `bg-gradient-to-br ${selectedBoardTheme.lightSquareClass}`
+                    : `bg-gradient-to-br ${selectedBoardTheme.darkSquareClass}`
                 )}
                 onClick={() => onSquareClick(square)}
                 aria-label={`Case ${square}`}
@@ -256,7 +275,7 @@ export function ChessBoard({
               <motion.button
                 key={`${piece.square}-${piece.type}-${piece.color}`}
                 type="button"
-                className={clsx('absolute z-10 p-1.5 sm:p-2', isDragging && 'z-20')}
+                className={clsx('absolute z-10 p-1.5 sm:p-2 touch-none', isDragging ? 'z-20 cursor-grabbing' : 'cursor-grab')}
                 style={
                   isDragging
                     ? {
@@ -266,8 +285,8 @@ export function ChessBoard({
                       }
                     : { width, left, top }
                 }
-                animate={{ left, top }}
-                transition={{ type: 'spring', stiffness: 360, damping: 28, mass: 0.42 }}
+                animate={isDragging ? { scale: 1.08 } : { left, top, scale: 1 }}
+                transition={isDragging ? { duration: 0.08 } : { type: 'spring', stiffness: 360, damping: 28, mass: 0.42 }}
                 onPointerDown={(evt) => {
                   if (evt.button !== 0 || !boardRef.current) return;
                   const canMove = onPiecePointerDown(piece.square);
