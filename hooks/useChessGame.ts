@@ -109,6 +109,14 @@ export function useChessGame(initialFen?: string) {
     }
   };
 
+
+  const playLanMove = (lan: string) => {
+    const from = lan.slice(0, 2) as Square;
+    const to = lan.slice(2, 4) as Square;
+    const promotion = (lan.slice(4, 5) || undefined) as PieceSymbol | undefined;
+    return Boolean(tryMove(from, to, promotion));
+  };
+
   const setFromPiecePointer = (square: Square) => {
     const piece = game.get(square);
     if (piece && piece.color === game.turn()) {
@@ -129,6 +137,8 @@ export function useChessGame(initialFen?: string) {
     clearTransient();
     setLastError(null);
   };
+
+  const isGameOver = game.isGameOver();
 
   const status = useMemo(() => {
     if (game.isCheckmate()) {
@@ -175,6 +185,7 @@ export function useChessGame(initialFen?: string) {
     fen: record.currentFen,
     pgn: exportPgn(record),
     status,
+    isGameOver,
     turn: game.turn() as Color,
     currentIndex: record.currentIndex,
     positionsCount: record.positions.length,
@@ -182,6 +193,7 @@ export function useChessGame(initialFen?: string) {
     lastError,
     handleSquareAction,
     setFromPiecePointer,
+    playLanMove,
     requestMove,
     setOrientation,
     handlePromotion,

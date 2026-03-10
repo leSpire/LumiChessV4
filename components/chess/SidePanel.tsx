@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { EnginePanel } from '@/components/chess/EnginePanel';
 import { BOARD_THEMES } from '@/lib/boardThemes';
 import { PIECE_THEMES } from '@/lib/pieceThemes';
 import type { MoveHistoryEntry } from '@/types/chess';
+import type { AiDifficultyConfig, EngineOutput, EngineStatus } from '@/types/engine';
 import type { GameError, PgnMetadata, ServiceResult } from '@/types/game';
 
 interface SidePanelProps {
@@ -25,6 +27,21 @@ interface SidePanelProps {
   onPieceThemeChange: (themeId: string) => void;
   boardTheme: string;
   onBoardThemeChange: (themeId: string) => void;
+  aiEnabled: boolean;
+  playerColor: 'w' | 'b';
+  aiLevel: string;
+  aiLevels: AiDifficultyConfig[];
+  engineStatus: EngineStatus;
+  engineError: string | null;
+  engineOutput: EngineOutput;
+  bestMoveLabel: string;
+  showBestMove: boolean;
+  onToggleAiEnabled: (value: boolean) => void;
+  onPlayerColorChange: (value: 'w' | 'b') => void;
+  onAiLevelChange: (value: string) => void;
+  onNewAiGame: () => void;
+  onResetAi: () => void;
+  onToggleBestMove: (value: boolean) => void;
 }
 
 export function SidePanel({
@@ -45,7 +62,22 @@ export function SidePanel({
   pieceTheme,
   onPieceThemeChange,
   boardTheme,
-  onBoardThemeChange
+  onBoardThemeChange,
+  aiEnabled,
+  playerColor,
+  aiLevel,
+  aiLevels,
+  engineStatus,
+  engineError,
+  engineOutput,
+  bestMoveLabel,
+  showBestMove,
+  onToggleAiEnabled,
+  onPlayerColorChange,
+  onAiLevelChange,
+  onNewAiGame,
+  onResetAi,
+  onToggleBestMove
 }: SidePanelProps) {
   const [fenInput, setFenInput] = useState(fen);
   const [pgnInput, setPgnInput] = useState(pgn);
@@ -117,6 +149,24 @@ export function SidePanel({
           Inverser la vue
         </button>
       </div>
+
+      <EnginePanel
+        enabled={aiEnabled}
+        playerColor={playerColor}
+        levelId={aiLevel}
+        levels={aiLevels}
+        status={engineStatus}
+        engineError={engineError}
+        output={engineOutput}
+        bestMoveLabel={bestMoveLabel}
+        showBestMove={showBestMove}
+        onToggleEnabled={onToggleAiEnabled}
+        onPlayerColorChange={onPlayerColorChange}
+        onLevelChange={onAiLevelChange}
+        onNewGame={onNewAiGame}
+        onReset={onResetAi}
+        onToggleBestMove={onToggleBestMove}
+      />
 
       <section className="mb-4 rounded-2xl border border-[#c6933d2e] bg-[#0f0c09] p-3">
         <label className="mb-2 block text-xs text-[#cfac74]">Style des pièces</label>
