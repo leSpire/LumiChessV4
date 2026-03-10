@@ -21,6 +21,7 @@ export function useChessGame(initialFen?: string) {
   const [orientation, setOrientation] = useState<BoardOrientation>('w');
   const [pendingPromotion, setPendingPromotion] = useState<PromotionDialogState | null>(null);
   const [lastMove, setLastMove] = useState<LastMove | null>(null);
+  const [lastMoveSan, setLastMoveSan] = useState<string | null>(null);
   const [lastError, setLastError] = useState<GameError | null>(null);
 
   const game = useMemo(() => new Chess(record.currentFen), [record.currentFen]);
@@ -49,6 +50,7 @@ export function useChessGame(initialFen?: string) {
 
     setRecord(result.data);
     setLastMove({ from, to });
+    setLastMoveSan(result.data.moves[result.data.moves.length - 1]?.san ?? null);
     setSelectedSquare(null);
     setLastError(null);
 
@@ -130,6 +132,7 @@ export function useChessGame(initialFen?: string) {
     setSelectedSquare(null);
     setPendingPromotion(null);
     setLastMove(null);
+    setLastMoveSan(null);
   };
 
   const reset = () => {
@@ -178,6 +181,7 @@ export function useChessGame(initialFen?: string) {
     selectedSquare,
     legalTargets,
     lastMove,
+    lastMoveSan,
     checkSquare,
     orientation,
     pendingPromotion,

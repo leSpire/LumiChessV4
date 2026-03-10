@@ -29,6 +29,7 @@ export interface EngineSearchSnapshot {
 
 export interface EngineOutput extends EngineSearchSnapshot {
   fen: string;
+  pvLines?: EngineSearchSnapshot[];
 }
 
 export type AiSkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'custom';
@@ -47,6 +48,8 @@ export interface EngineRequestOptions {
   depth: number;
   moveTimeMs: number;
   skillLevel: number;
+  threads: number;
+  multiPv: number;
 }
 
 export interface ParsedUciInfo extends Omit<EngineSearchSnapshot, 'bestMove'> {}
