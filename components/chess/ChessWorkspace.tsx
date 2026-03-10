@@ -43,10 +43,16 @@ export function ChessWorkspace() {
         fen={game.fen}
         pgn={game.pgn}
         history={game.history}
+        currentIndex={game.currentIndex}
+        positionsCount={game.positionsCount}
+        metadata={game.metadata}
+        error={game.lastError}
         onReset={game.reset}
         onToggleOrientation={() => game.setOrientation(game.orientation === 'w' ? 'b' : 'w')}
         onLoadFen={game.loadFen}
         onLoadPgn={game.loadPgn}
+        onNavigate={game.navigate}
+        onMoveToIndex={game.moveToIndex}
         pieceTheme={pieceTheme}
         onPieceThemeChange={setPieceTheme}
       />

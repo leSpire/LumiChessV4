@@ -1,4 +1,5 @@
-import type { Color, PieceSymbol, Square, Move } from 'chess.js';
+import type { Color, PieceSymbol, Square } from 'chess.js';
+import type { MoveHistoryRow } from '@/types/game';
 
 export type BoardOrientation = Color;
 
@@ -38,14 +39,4 @@ export interface ChessBoardProps {
   pieceTheme: string;
 }
 
-
-export interface GameStatus {
-  label: string;
-  value: string;
-}
-
-export interface MoveHistoryEntry {
-  moveNumber: number;
-  white?: Move;
-  black?: Move;
-}
+export interface MoveHistoryEntry extends MoveHistoryRow {}

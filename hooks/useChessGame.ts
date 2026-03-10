@@ -1,20 +1,29 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Chess, type Color, type Move, type PieceSymbol, type Square } from 'chess.js';
+import { Chess, type Color, type PieceSymbol, type Square } from 'chess.js';
 import { boardMatrixToPieces, findKingSquare } from '@/lib/chessboard';
+import {
+  applyMove,
+  createInitialRecord,
+  createRecordFromFen,
+  createRecordFromPgn,
+  exportPgn,
+  navigateRecord,
+  toHistoryRows
+} from '@/lib/game/chessGameService';
 import type { BoardOrientation, LastMove, MoveHistoryEntry, PromotionDialogState } from '@/types/chess';
-
-function createGame(fen?: string) {
-  return fen ? new Chess(fen) : new Chess();
-}
+import type { GameError } from '@/types/game';
 
 export function useChessGame(initialFen?: string) {
-  const [game, setGame] = useState(() => createGame(initialFen));
+  const [record, setRecord] = useState(() => createInitialRecord(initialFen));
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [orientation, setOrientation] = useState<BoardOrientation>('w');
   const [pendingPromotion, setPendingPromotion] = useState<PromotionDialogState | null>(null);
   const [lastMove, setLastMove] = useState<LastMove | null>(null);
+  const [lastError, setLastError] = useState<GameError | null>(null);
+
+  const game = useMemo(() => new Chess(record.currentFen), [record.currentFen]);
 
   const legalTargets = useMemo(() => {
     if (!selectedSquare) return [];
@@ -29,30 +38,21 @@ export function useChessGame(initialFen?: string) {
     return findKingSquare(pieces, game.turn());
   }, [game, pieces]);
 
-  const history = useMemo<MoveHistoryEntry[]>(() => {
-    const verboseMoves = game.history({ verbose: true });
-    const rows: MoveHistoryEntry[] = [];
-
-    for (let i = 0; i < verboseMoves.length; i += 2) {
-      rows.push({
-        moveNumber: Math.floor(i / 2) + 1,
-        white: verboseMoves[i],
-        black: verboseMoves[i + 1]
-      });
-    }
-
-    return rows;
-  }, [game]);
+  const history = useMemo<MoveHistoryEntry[]>(() => toHistoryRows(record.moves), [record.moves]);
 
   const tryMove = (from: Square, to: Square, promotion?: PieceSymbol) => {
-    const result = game.move({ from, to, promotion });
-    if (!result) return null;
+    const result = applyMove(record, { from, to, promotion });
+    if (!result.ok || !result.data) {
+      setLastError(result.error ?? null);
+      return null;
+    }
 
-    setGame(new Chess(game.fen()));
+    setRecord(result.data);
     setLastMove({ from, to });
     setSelectedSquare(null);
+    setLastError(null);
 
-    return result;
+    return true;
   };
 
   const requestMove = (from: Square, to: Square) => {
@@ -67,8 +67,7 @@ export function useChessGame(initialFen?: string) {
       return true;
     }
 
-    const move = tryMove(from, to);
-    return Boolean(move);
+    return Boolean(tryMove(from, to));
   };
 
   const handlePromotion = (piece: PieceSymbol) => {
@@ -119,12 +118,16 @@ export function useChessGame(initialFen?: string) {
     return false;
   };
 
-  const reset = () => {
-    const next = new Chess();
-    setGame(next);
+  const clearTransient = () => {
     setSelectedSquare(null);
     setPendingPromotion(null);
     setLastMove(null);
+  };
+
+  const reset = () => {
+    setRecord(createInitialRecord());
+    clearTransient();
+    setLastError(null);
   };
 
   const status = useMemo(() => {
@@ -143,6 +146,23 @@ export function useChessGame(initialFen?: string) {
       : `${game.turn() === 'w' ? 'Blancs' : 'Noirs'} à jouer`;
   }, [game]);
 
+  const moveToIndex = (index: number) => {
+    setRecord((current) => {
+      const boundedIndex = Math.max(0, Math.min(index, current.positions.length - 1));
+      return {
+        ...current,
+        currentIndex: boundedIndex,
+        currentFen: current.positions[boundedIndex].fen
+      };
+    });
+    clearTransient();
+  };
+
+  const navigate = (action: 'start' | 'prev' | 'next' | 'end') => {
+    setRecord((current) => navigateRecord(current, action));
+    clearTransient();
+  };
+
   return {
     pieces,
     selectedSquare,
@@ -152,40 +172,45 @@ export function useChessGame(initialFen?: string) {
     orientation,
     pendingPromotion,
     history,
-    fen: game.fen(),
-    pgn: game.pgn(),
+    fen: record.currentFen,
+    pgn: exportPgn(record),
     status,
     turn: game.turn() as Color,
+    currentIndex: record.currentIndex,
+    positionsCount: record.positions.length,
+    metadata: record.metadata,
+    lastError,
     handleSquareAction,
     setFromPiecePointer,
     requestMove,
     setOrientation,
     handlePromotion,
     reset,
+    moveToIndex,
+    navigate,
     loadFen: (fen: string) => {
-      try {
-        const next = new Chess(fen);
-        setGame(next);
-        setSelectedSquare(null);
-        setPendingPromotion(null);
-        setLastMove(null);
-        return true;
-      } catch {
-        return false;
+      const result = createRecordFromFen(fen);
+      if (!result.ok || !result.data) {
+        setLastError(result.error ?? null);
+        return result;
       }
+
+      setRecord(result.data);
+      clearTransient();
+      setLastError(null);
+      return result;
     },
     loadPgn: (pgn: string) => {
-      try {
-        const next = new Chess();
-        next.loadPgn(pgn);
-        setGame(next);
-        setSelectedSquare(null);
-        setPendingPromotion(null);
-        setLastMove(null);
-        return true;
-      } catch {
-        return false;
+      const result = createRecordFromPgn(pgn);
+      if (!result.ok || !result.data) {
+        setLastError(result.error ?? null);
+        return result;
       }
+
+      setRecord(result.data);
+      clearTransient();
+      setLastError(null);
+      return result;
     }
   };
 }
