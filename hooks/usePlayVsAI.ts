@@ -14,6 +14,11 @@ export function usePlayVsAI() {
   const [playerColor, setPlayerColor] = useState<Color>('w');
   const [level, setLevel] = useState<AiSkillLevel>(DEFAULT_AI_LEVEL);
   const [showBestMove, setShowBestMove] = useState(true);
+  const [showThreats, setShowThreats] = useState(true);
+  const [showSuggestionArrows, setShowSuggestionArrows] = useState(true);
+  const [engineThreads, setEngineThreads] = useState(2);
+  const [engineMultiPv, setEngineMultiPv] = useState(3);
+  const [engineDepth, setEngineDepth] = useState(AI_LEVELS[DEFAULT_AI_LEVEL].depth);
   const runningFenRef = useRef<string | null>(null);
 
   const aiColor: Color = playerColor === 'w' ? 'b' : 'w';
@@ -29,9 +34,11 @@ export function usePlayVsAI() {
       runningFenRef.current = fen;
       void engine.search({
         fen,
-        depth: levelConfig.depth,
+        depth: engineDepth,
         moveTimeMs: levelConfig.moveTimeMs,
-        skillLevel: levelConfig.skillLevel
+        skillLevel: levelConfig.skillLevel,
+        threads: engineThreads,
+        multiPv: engineMultiPv
       }).then((result) => {
         if (!result || runningFenRef.current !== fen) return;
 
@@ -41,8 +48,12 @@ export function usePlayVsAI() {
         }
       });
     },
-    [aiColor, enabled, engine, game, levelConfig.depth, levelConfig.moveTimeMs, levelConfig.skillLevel]
+    [aiColor, enabled, engine, engineDepth, engineMultiPv, engineThreads, game, levelConfig.moveTimeMs, levelConfig.skillLevel]
   );
+
+  useEffect(() => {
+    setEngineDepth(levelConfig.depth);
+  }, [levelConfig.depth]);
 
   useEffect(() => {
     refreshAnalysis(game.fen);
@@ -116,8 +127,18 @@ export function usePlayVsAI() {
     level,
     levelConfig,
     setLevel,
+    engineDepth,
+    setEngineDepth,
+    engineThreads,
+    setEngineThreads,
+    engineMultiPv,
+    setEngineMultiPv,
     showBestMove,
     setShowBestMove,
+    showThreats,
+    setShowThreats,
+    showSuggestionArrows,
+    setShowSuggestionArrows,
     handleSquareAction,
     handlePiecePointer,
     requestPlayerMove,

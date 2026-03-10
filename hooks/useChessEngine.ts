@@ -10,6 +10,7 @@ interface PendingSearch {
   fen: string;
   perspective: Color;
   snapshot: EngineOutput;
+  pvMap: Map<number, EngineOutput>;
   resolve: (output: EngineOutput | null) => void;
 }
 
@@ -71,10 +72,24 @@ export function useChessEngine() {
           const parsed = parseUciInfo(line, pending.perspective);
           if (!parsed) return;
 
+          const pvSlot = parsed.multipv ?? 1;
+          const previousPv = pending.pvMap.get(pvSlot);
+          const pvSnapshot: EngineOutput = {
+            ...previousPv,
+            ...parsed,
+            fen: pending.fen
+          };
+          pending.pvMap.set(pvSlot, pvSnapshot);
+
+          const pvLines = Array.from(pending.pvMap.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([, value]) => value);
+
           const nextSnapshot: EngineOutput = {
             ...pending.snapshot,
             ...parsed,
-            fen: pending.fen
+            fen: pending.fen,
+            pvLines
           };
 
           pending.snapshot = nextSnapshot;
@@ -115,7 +130,7 @@ export function useChessEngine() {
   }, [start, stop]);
 
   const search = useCallback(
-    async ({ fen, depth, moveTimeMs, skillLevel }: EngineRequestOptions): Promise<EngineOutput | null> => {
+    async ({ fen, depth, moveTimeMs, skillLevel, threads, multiPv }: EngineRequestOptions): Promise<EngineOutput | null> => {
       if (!workerRef.current) {
         await start();
       }
@@ -139,11 +154,14 @@ export function useChessEngine() {
           fen,
           perspective,
           snapshot: initialSnapshot,
+          pvMap: new Map(),
           resolve
         };
       });
 
       send(`setoption name Skill Level value ${Math.max(0, Math.min(20, skillLevel))}`);
+      send(`setoption name Threads value ${Math.max(1, Math.min(32, threads))}`);
+      send(`setoption name MultiPV value ${Math.max(1, Math.min(5, multiPv))}`);
       send('ucinewgame');
       send('isready');
       send(`position fen ${fen}`);

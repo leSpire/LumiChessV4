@@ -57,7 +57,8 @@ export function ChessBoard({
   onPiecePointerDown,
   onPieceDrop,
   pieceTheme,
-  boardTheme
+  boardTheme,
+  suggestedArrows = []
 }: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -231,6 +232,9 @@ export function ChessBoard({
               <marker id="arrowhead" markerWidth="5" markerHeight="4" refX="4.2" refY="2" orient="auto" markerUnits="strokeWidth">
                 <path d="M0,0 L5,2 L0,4 Z" fill="#57b8ffcc" />
               </marker>
+              <marker id="arrowhead-red" markerWidth="5" markerHeight="4" refX="4.2" refY="2" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L5,2 L0,4 Z" fill="#f87171cc" />
+              </marker>
             </defs>
             {arrows.map((arrow) => {
               const from = squareCenter(arrow.from);
@@ -245,6 +249,23 @@ export function ChessBoard({
                   stroke="#57b8ffcc"
                   strokeWidth="1.8"
                   markerEnd="url(#arrowhead)"
+                  strokeLinecap="round"
+                />
+              );
+            })}
+            {suggestedArrows.map((arrow, index) => {
+              const from = squareCenter(arrow.from);
+              const to = squareCenter(arrow.to);
+              return (
+                <line
+                  key={`suggested-${arrow.from}-${arrow.to}-${index}`}
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  stroke={arrow.color === 'red' ? '#f87171cc' : '#57b8ffcc'}
+                  strokeWidth="1.8"
+                  markerEnd={arrow.color === 'red' ? 'url(#arrowhead-red)' : 'url(#arrowhead)'}
                   strokeLinecap="round"
                 />
               );

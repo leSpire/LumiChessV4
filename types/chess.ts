@@ -38,6 +38,7 @@ export interface ChessBoardProps {
   onPieceDrop: (from: Square, to: Square) => void;
   pieceTheme: string;
   boardTheme: string;
+  suggestedArrows?: Array<{ from: Square; to: Square; color?: 'blue' | 'red' }>;
 }
 
 export interface MoveHistoryEntry extends MoveHistoryRow {}
