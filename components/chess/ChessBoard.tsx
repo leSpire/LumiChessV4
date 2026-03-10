@@ -5,7 +5,7 @@ import { type PointerEvent, useMemo, useRef, useState } from 'react';
 import type { Square } from 'chess.js';
 import clsx from 'clsx';
 import { ChessPiece } from '@/components/chess/ChessPiece';
-import { FILES, RANKS, coordsToSquare, getDisplayFiles, getDisplayRanks, isLightSquare, squareToCoords } from '@/lib/chessboard';
+import { coordsToSquare, getDisplayFiles, getDisplayRanks, isLightSquare, squareToCoords } from '@/lib/chessboard';
 import type { ChessBoardProps } from '@/types/chess';
 
 interface DragState {
@@ -54,7 +54,8 @@ export function ChessBoard({
   pieces,
   onSquareClick,
   onPiecePointerDown,
-  onPieceDrop
+  onPieceDrop,
+  pieceTheme
 }: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -183,7 +184,7 @@ export function ChessBoard({
                 key={square}
                 type="button"
                 className={clsx(
-                  'group relative flex items-center justify-center transition-colors duration-150',
+                  'group relative flex items-center justify-center transition-all duration-200',
                   isLightSquare(square)
                     ? 'bg-gradient-to-br from-[#f2e0be] to-[#d3b88e]'
                     : 'bg-gradient-to-br from-[#8a6439] to-[#6a4a2b]'
@@ -266,7 +267,7 @@ export function ChessBoard({
                     : { width, left, top }
                 }
                 animate={{ left, top }}
-                transition={{ type: 'spring', stiffness: 500, damping: 34, mass: 0.3 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 28, mass: 0.42 }}
                 onPointerDown={(evt) => {
                   if (evt.button !== 0 || !boardRef.current) return;
                   const canMove = onPiecePointerDown(piece.square);
@@ -281,7 +282,7 @@ export function ChessBoard({
                 }}
                 aria-label={`Pièce ${piece.color === 'w' ? 'blanche' : 'noire'} ${piece.type} sur ${piece.square}`}
               >
-                <ChessPiece type={piece.type} color={piece.color} isDragging={isDragging} />
+                <ChessPiece type={piece.type} color={piece.color} themeId={pieceTheme} isDragging={isDragging} />
               </motion.button>
             );
           })}

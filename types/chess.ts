@@ -35,7 +35,9 @@ export interface ChessBoardProps {
   onSquareClick: (square: Square) => void;
   onPiecePointerDown: (square: Square) => boolean;
   onPieceDrop: (from: Square, to: Square) => void;
+  pieceTheme: string;
 }
+
 
 export interface GameStatus {
   label: string;
