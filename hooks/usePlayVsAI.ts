@@ -10,7 +10,7 @@ import type { AiDifficultyConfig, AiSkillLevel } from '@/types/engine';
 export function usePlayVsAI() {
   const game = useChessGame();
   const engine = useChessEngine();
-  const [enabled, setEnabled] = useState(true);
+  const [mode, setMode] = useState<'play-vs-ai' | 'analysis'>('play-vs-ai');
   const [playerColor, setPlayerColor] = useState<Color>('w');
   const [level, setLevel] = useState<AiSkillLevel>(DEFAULT_AI_LEVEL);
   const [showBestMove, setShowBestMove] = useState(true);
@@ -20,13 +20,14 @@ export function usePlayVsAI() {
   const [engineMultiPv, setEngineMultiPv] = useState(3);
   const [engineDepth, setEngineDepth] = useState(AI_LEVELS[DEFAULT_AI_LEVEL].depth);
   const runningFenRef = useRef<string | null>(null);
+  const isPlayVsAiMode = mode === 'play-vs-ai';
 
   const aiColor: Color = playerColor === 'w' ? 'b' : 'w';
   const levelConfig: AiDifficultyConfig = AI_LEVELS[level];
 
   const refreshAnalysis = useCallback(
     (fen: string) => {
-      if (!enabled || game.isGameOver) {
+      if (game.isGameOver) {
         engine.cancelCurrentSearch();
         return;
       }
@@ -43,12 +44,12 @@ export function usePlayVsAI() {
         if (!result || runningFenRef.current !== fen) return;
 
         const turn = (fen.split(' ')[1] === 'b' ? 'b' : 'w') as Color;
-        if (turn === aiColor && result.bestMove) {
+        if (isPlayVsAiMode && turn === aiColor && result.bestMove) {
           game.playLanMove(result.bestMove);
         }
       });
     },
-    [aiColor, enabled, engine, engineDepth, engineMultiPv, engineThreads, game, levelConfig.moveTimeMs, levelConfig.skillLevel]
+    [aiColor, engine, engineDepth, engineMultiPv, engineThreads, game, isPlayVsAiMode, levelConfig.moveTimeMs, levelConfig.skillLevel]
   );
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function usePlayVsAI() {
 
   const handleSquareAction = useCallback(
     (square: Square) => {
-      if (!enabled) {
+      if (!isPlayVsAiMode) {
         game.handleSquareAction(square);
         return;
       }
@@ -70,21 +71,21 @@ export function usePlayVsAI() {
       if (game.turn !== playerColor || game.isGameOver) return;
       game.handleSquareAction(square);
     },
-    [enabled, game, playerColor]
+    [game, isPlayVsAiMode, playerColor]
   );
 
   const handlePiecePointer = useCallback(
     (square: Square) => {
-      if (!enabled) return game.setFromPiecePointer(square);
+      if (!isPlayVsAiMode) return game.setFromPiecePointer(square);
       if (game.turn !== playerColor || game.isGameOver) return false;
       return game.setFromPiecePointer(square);
     },
-    [enabled, game, playerColor]
+    [game, isPlayVsAiMode, playerColor]
   );
 
   const requestPlayerMove = useCallback(
     (from: Square, to: Square) => {
-      if (!enabled) {
+      if (!isPlayVsAiMode) {
         game.requestMove(from, to);
         return;
       }
@@ -93,7 +94,7 @@ export function usePlayVsAI() {
       engine.cancelCurrentSearch();
       game.requestMove(from, to);
     },
-    [enabled, engine, game, playerColor]
+    [engine, game, isPlayVsAiMode, playerColor]
   );
 
   const resetVsAi = useCallback(() => {
@@ -119,8 +120,9 @@ export function usePlayVsAI() {
   return {
     game,
     engine,
-    enabled,
-    setEnabled,
+    mode,
+    setMode,
+    isPlayVsAiMode,
     playerColor,
     setPlayerColor,
     aiColor,

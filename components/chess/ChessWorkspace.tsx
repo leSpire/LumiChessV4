@@ -25,6 +25,7 @@ export function ChessWorkspace() {
   const [soundTheme, setSoundTheme] = useState<SoundTheme>('classic');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [modeChosen, setModeChosen] = useState(false);
 
   useEffect(() => {
     const savedPieceTheme = window.localStorage.getItem('lumichess-piece-theme');
@@ -62,7 +63,6 @@ export function ChessWorkspace() {
   }, [game.lastMoveSan, soundEnabled, soundTheme]);
 
   const suggestedArrows = useMemo(() => {
-    if (!ai.enabled) return [];
     if (!ai.showSuggestionArrows) return [];
 
     const arrows: Array<{ from: Square; to: Square; color?: 'blue' | 'red' }> = [];
@@ -81,8 +81,30 @@ export function ChessWorkspace() {
     return arrows;
   }, [ai.engine.output.pv?.moves, ai.engine.output.pvLines, ai.engineMultiPv, ai.showSuggestionArrows, ai.showThreats]);
 
+
+  const chooseMode = (mode: 'play-vs-ai' | 'analysis') => {
+    ai.setMode(mode);
+    setModeChosen(true);
+  };
+
   return (
     <section className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+      {!modeChosen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#090704f0] p-4">
+          <div className="w-full max-w-xl rounded-3xl border border-[#c6933d70] bg-[#14100be8] p-6 text-center text-[#f4e4c9] shadow-2xl">
+            <p className="mb-2 text-sm uppercase tracking-[0.2em] text-[#d9b36c]">Bienvenue</p>
+            <h2 className="mb-5 text-2xl font-semibold">Choisis ton mode de jeu</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button type="button" onClick={() => chooseMode('play-vs-ai')} className="rounded-xl border border-[#d9b36c] bg-[#d9ab5d2c] px-4 py-3 font-medium hover:bg-[#d9ab5d3f]">
+                Jouer contre IA
+              </button>
+              <button type="button" onClick={() => chooseMode('analysis')} className="rounded-xl border border-[#c6933d70] px-4 py-3 font-medium hover:bg-[#d9ab5d1f]">
+                Analyse de partie
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div>
         <div className="mb-3 flex justify-end">
           <button
@@ -102,9 +124,9 @@ export function ChessWorkspace() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => ai.setEnabled(true)}
+                  onClick={() => ai.setMode('play-vs-ai')}
                   className={`rounded-lg border px-2 py-1.5 transition ${
-                    ai.enabled
+                    ai.mode === 'play-vs-ai'
                       ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
                       : 'border-[#c6933d42] text-[#d9c09a] hover:bg-[#d9ab5d1a]'
                   }`}
@@ -113,14 +135,14 @@ export function ChessWorkspace() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => ai.setEnabled(false)}
+                  onClick={() => ai.setMode('analysis')}
                   className={`rounded-lg border px-2 py-1.5 transition ${
-                    !ai.enabled
+                    ai.mode === 'analysis'
                       ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
                       : 'border-[#c6933d42] text-[#d9c09a] hover:bg-[#d9ab5d1a]'
                   }`}
                 >
-                  Échiquier libre
+                  Analyse libre
                 </button>
               </div>
             </section>
@@ -128,19 +150,19 @@ export function ChessWorkspace() {
             <section>
               <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#d9b36c]">Ordinateur</p>
               <label className="mb-2 block">Niveau IA
-                <select value={ai.level} onChange={(evt) => ai.setLevel(evt.target.value as typeof ai.level)} disabled={!ai.enabled} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50">
+                <select value={ai.level} onChange={(evt) => ai.setLevel(evt.target.value as typeof ai.level)} disabled={!ai.isPlayVsAiMode} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50">
                   {ai.levels.map((level) => <option key={level.id} value={level.id}>{level.label}</option>)}
                 </select>
               </label>
               <label className="mb-2 block">Profondeur
-                <input type="range" min={4} max={30} value={ai.engineDepth} onChange={(evt) => ai.setEngineDepth(Number(evt.target.value))} disabled={!ai.enabled} className="mt-1 w-full disabled:opacity-50" />
+                <input type="range" min={4} max={30} value={ai.engineDepth} onChange={(evt) => ai.setEngineDepth(Number(evt.target.value))} disabled={!ai.isPlayVsAiMode} className="mt-1 w-full disabled:opacity-50" />
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <label>Threads
-                  <input type="number" min={1} max={32} value={ai.engineThreads} onChange={(evt) => ai.setEngineThreads(Number(evt.target.value) || 1)} disabled={!ai.enabled} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50" />
+                  <input type="number" min={1} max={32} value={ai.engineThreads} onChange={(evt) => ai.setEngineThreads(Number(evt.target.value) || 1)} disabled={!ai.isPlayVsAiMode} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50" />
                 </label>
                 <label>Variantes
-                  <input type="number" min={1} max={5} value={ai.engineMultiPv} onChange={(evt) => ai.setEngineMultiPv(Number(evt.target.value) || 1)} disabled={!ai.enabled} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50" />
+                  <input type="number" min={1} max={5} value={ai.engineMultiPv} onChange={(evt) => ai.setEngineMultiPv(Number(evt.target.value) || 1)} disabled={!ai.isPlayVsAiMode} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50" />
                 </label>
               </div>
             </section>
@@ -198,6 +220,8 @@ export function ChessWorkspace() {
         engineStatus={ai.engine.status}
         engineError={ai.engine.error}
         engineOutput={ai.engine.output}
+        pgn={game.pgn}
+        onImportPgn={game.loadPgn}
       />
     </section>
   );
