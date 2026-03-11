@@ -62,6 +62,7 @@ export function ChessWorkspace() {
   }, [game.lastMoveSan, soundEnabled, soundTheme]);
 
   const suggestedArrows = useMemo(() => {
+    if (!ai.enabled) return [];
     if (!ai.showSuggestionArrows) return [];
 
     const arrows: Array<{ from: Square; to: Square; color?: 'blue' | 'red' }> = [];
@@ -82,33 +83,64 @@ export function ChessWorkspace() {
 
   return (
     <section className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setSettingsOpen((current) => !current)}
-          className="absolute right-4 top-4 z-30 rounded-full border border-[#d3aa64aa] bg-[#0e0c09e6] px-3 py-2 text-sm text-[#f4dfb6]"
-        >
-          ⚙️
-        </button>
+      <div>
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((current) => !current)}
+            className="z-30 rounded-full border border-[#d3aa64aa] bg-[#0e0c09e6] px-3 py-2 text-sm text-[#f4dfb6]"
+            aria-label="Ouvrir les paramètres"
+          >
+            ⚙️
+          </button>
+        </div>
 
         {settingsOpen && (
-          <div className="absolute right-4 top-16 z-30 w-80 space-y-3 rounded-2xl border border-[#c6933d70] bg-[#14100be8] p-4 text-xs text-[#f4e4c9] shadow-2xl backdrop-blur">
+          <div className="mb-3 ml-auto w-80 space-y-3 rounded-2xl border border-[#c6933d70] bg-[#14100be8] p-4 text-xs text-[#f4e4c9] shadow-2xl backdrop-blur">
+            <section>
+              <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#d9b36c]">Mode de jeu</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => ai.setEnabled(true)}
+                  className={`rounded-lg border px-2 py-1.5 transition ${
+                    ai.enabled
+                      ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
+                      : 'border-[#c6933d42] text-[#d9c09a] hover:bg-[#d9ab5d1a]'
+                  }`}
+                >
+                  Contre IA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => ai.setEnabled(false)}
+                  className={`rounded-lg border px-2 py-1.5 transition ${
+                    !ai.enabled
+                      ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
+                      : 'border-[#c6933d42] text-[#d9c09a] hover:bg-[#d9ab5d1a]'
+                  }`}
+                >
+                  Échiquier libre
+                </button>
+              </div>
+            </section>
+
             <section>
               <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#d9b36c]">Ordinateur</p>
               <label className="mb-2 block">Niveau IA
-                <select value={ai.level} onChange={(evt) => ai.setLevel(evt.target.value as typeof ai.level)} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5">
+                <select value={ai.level} onChange={(evt) => ai.setLevel(evt.target.value as typeof ai.level)} disabled={!ai.enabled} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50">
                   {ai.levels.map((level) => <option key={level.id} value={level.id}>{level.label}</option>)}
                 </select>
               </label>
               <label className="mb-2 block">Profondeur
-                <input type="range" min={4} max={30} value={ai.engineDepth} onChange={(evt) => ai.setEngineDepth(Number(evt.target.value))} className="mt-1 w-full" />
+                <input type="range" min={4} max={30} value={ai.engineDepth} onChange={(evt) => ai.setEngineDepth(Number(evt.target.value))} disabled={!ai.enabled} className="mt-1 w-full disabled:opacity-50" />
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <label>Threads
-                  <input type="number" min={1} max={32} value={ai.engineThreads} onChange={(evt) => ai.setEngineThreads(Number(evt.target.value) || 1)} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5" />
+                  <input type="number" min={1} max={32} value={ai.engineThreads} onChange={(evt) => ai.setEngineThreads(Number(evt.target.value) || 1)} disabled={!ai.enabled} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50" />
                 </label>
                 <label>Variantes
-                  <input type="number" min={1} max={5} value={ai.engineMultiPv} onChange={(evt) => ai.setEngineMultiPv(Number(evt.target.value) || 1)} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5" />
+                  <input type="number" min={1} max={5} value={ai.engineMultiPv} onChange={(evt) => ai.setEngineMultiPv(Number(evt.target.value) || 1)} disabled={!ai.enabled} className="mt-1 w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 disabled:opacity-50" />
                 </label>
               </div>
             </section>
