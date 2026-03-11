@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { formatEvaluation } from '@/lib/engine/uci';
 import type { MoveHistoryEntry } from '@/types/chess';
 import type { EngineOutput, EngineStatus } from '@/types/engine';
@@ -15,6 +15,8 @@ interface SidePanelProps {
   engineStatus: EngineStatus;
   engineError: string | null;
   engineOutput: EngineOutput;
+  pgn: string;
+  onImportPgn: (pgn: string) => { ok: boolean; error?: { message: string } };
 }
 
 const STATUS_LABELS: Record<EngineStatus, string> = {
@@ -35,9 +37,24 @@ export function SidePanel({
   onMoveToIndex,
   engineStatus,
   engineError,
-  engineOutput
+  engineOutput,
+  pgn,
+  onImportPgn
 }: SidePanelProps) {
+  const [pgnInput, setPgnInput] = useState('');
+  const [importMessage, setImportMessage] = useState<string | null>(null);
   const topLines = useMemo(() => engineOutput.pvLines?.slice(0, 5) ?? [], [engineOutput.pvLines]);
+
+  const handleImportPgn = () => {
+    const result = onImportPgn(pgnInput);
+    if (result.ok) {
+      setImportMessage('PGN importé avec succès.');
+      setPgnInput('');
+      return;
+    }
+
+    setImportMessage(result.error?.message ?? 'Impossible d\'importer ce PGN.');
+  };
 
   return (
     <aside className="flex h-full min-h-[520px] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#c6933d38] bg-gradient-to-b from-[#1b1813] to-[#0b0907] shadow-board">
@@ -77,6 +94,30 @@ export function SidePanel({
           <button type="button" onClick={() => onNavigate('next')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">→</button>
           <button type="button" onClick={() => onNavigate('end')} className="rounded-lg border border-[#c6933d42] px-2 py-1 hover:bg-[#d9ab5d1f]">⏭</button>
         </div>
+      </section>
+
+      <section className="border-b border-[#ffffff14] px-4 py-3 text-xs text-[#e8d2ab]">
+        <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#d9b36c]">Importer un PGN</p>
+        <textarea
+          value={pgnInput}
+          onChange={(event) => setPgnInput(event.target.value)}
+          rows={4}
+          placeholder="Collez votre PGN ici"
+          className="w-full rounded border border-[#c6933d42] bg-[#0c0907] px-2 py-1.5 text-[#f1dfbf]"
+        />
+        <div className="mt-2 flex gap-2">
+          <button type="button" onClick={handleImportPgn} className="rounded-lg border border-[#c6933d42] px-2 py-1 text-[#f1dfbf] hover:bg-[#d9ab5d1f]">
+            Importer
+          </button>
+          <button
+            type="button"
+            onClick={() => setPgnInput(pgn)}
+            className="rounded-lg border border-[#c6933d42] px-2 py-1 text-[#f1dfbf] hover:bg-[#d9ab5d1f]"
+          >
+            Charger le PGN actuel
+          </button>
+        </div>
+        {importMessage && <p className="mt-2 text-[#c9ab78]">{importMessage}</p>}
       </section>
 
       <section className="flex-1 overflow-y-auto p-4">
