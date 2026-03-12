@@ -5,10 +5,12 @@ import type { Square } from 'chess.js';
 import { ChessBoard } from '@/components/chess/ChessBoard';
 import { PromotionDialog } from '@/components/chess/PromotionDialog';
 import { SidePanel } from '@/components/chess/SidePanel';
+import { PuzzlePanel } from '@/components/puzzle/PuzzlePanel';
 import { BOARD_THEMES } from '@/lib/boardThemes';
 import { PIECE_THEMES } from '@/lib/pieceThemes';
 import { playMoveSound, type SoundTheme } from '@/lib/sound';
 import { usePlayVsAI } from '@/hooks/usePlayVsAI';
+import { usePuzzleTraining } from '@/hooks/usePuzzleTraining';
 
 const uciToArrow = (uci?: string): { from: Square; to: Square } | null => {
   if (!uci || uci.length < 4) return null;
@@ -19,7 +21,8 @@ const uciToArrow = (uci?: string): { from: Square; to: Square } | null => {
 
 export function ChessWorkspace() {
   const ai = usePlayVsAI();
-  const game = ai.game;
+  const puzzle = usePuzzleTraining();
+  const game = ai.mode === 'puzzle' ? puzzle.game : ai.game;
   const [pieceTheme, setPieceTheme] = useState('classic');
   const [boardTheme, setBoardTheme] = useState('lumi-classic');
   const [soundTheme, setSoundTheme] = useState<SoundTheme>('classic');
@@ -82,10 +85,20 @@ export function ChessWorkspace() {
   }, [ai.engine.output.pv?.moves, ai.engine.output.pvLines, ai.engineMultiPv, ai.showSuggestionArrows, ai.showThreats]);
 
 
-  const chooseMode = (mode: 'play-vs-ai' | 'analysis') => {
+  useEffect(() => {
+    if (ai.mode === 'puzzle' && !puzzle.session.activePuzzle) {
+      puzzle.loadPuzzleByIndex(0);
+    }
+  }, [ai.mode, puzzle]);
+
+  const chooseMode = (mode: 'play-vs-ai' | 'analysis' | 'puzzle') => {
     ai.setMode(mode);
     setModeChosen(true);
   };
+
+  const handleSquareAction = ai.mode === 'puzzle' ? puzzle.game.handleSquareAction : ai.handleSquareAction;
+  const handlePiecePointer = ai.mode === 'puzzle' ? puzzle.game.setFromPiecePointer : ai.handlePiecePointer;
+  const handleDrop = ai.mode === 'puzzle' ? puzzle.playUserMove : ai.requestPlayerMove;
 
   return (
     <section className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -94,12 +107,15 @@ export function ChessWorkspace() {
           <div className="w-full max-w-xl rounded-3xl border border-[#c6933d70] bg-[#14100be8] p-6 text-center text-[#f4e4c9] shadow-2xl">
             <p className="mb-2 text-sm uppercase tracking-[0.2em] text-[#d9b36c]">Bienvenue</p>
             <h2 className="mb-5 text-2xl font-semibold">Choisis ton mode de jeu</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <button type="button" onClick={() => chooseMode('play-vs-ai')} className="rounded-xl border border-[#d9b36c] bg-[#d9ab5d2c] px-4 py-3 font-medium hover:bg-[#d9ab5d3f]">
                 Jouer contre IA
               </button>
               <button type="button" onClick={() => chooseMode('analysis')} className="rounded-xl border border-[#c6933d70] px-4 py-3 font-medium hover:bg-[#d9ab5d1f]">
                 Analyse de partie
+              </button>
+              <button type="button" onClick={() => chooseMode('puzzle')} className="rounded-xl border border-[#c6933d70] px-4 py-3 font-medium hover:bg-[#d9ab5d1f]">
+                Puzzles tactiques
               </button>
             </div>
           </div>
@@ -121,7 +137,7 @@ export function ChessWorkspace() {
           <div className="mb-3 ml-auto w-80 space-y-3 rounded-2xl border border-[#c6933d70] bg-[#14100be8] p-4 text-xs text-[#f4e4c9] shadow-2xl backdrop-blur">
             <section>
               <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#d9b36c]">Mode de jeu</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => ai.setMode('play-vs-ai')}
@@ -143,6 +159,20 @@ export function ChessWorkspace() {
                   }`}
                 >
                   Analyse libre
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    ai.setMode('puzzle');
+                    if (!puzzle.session.activePuzzle) puzzle.loadPuzzleByIndex(0);
+                  }}
+                  className={`rounded-lg border px-2 py-1.5 transition ${
+                    ai.mode === 'puzzle'
+                      ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
+                      : 'border-[#c6933d42] text-[#d9c09a] hover:bg-[#d9ab5d1a]'
+                  }`}
+                >
+                  Puzzle
                 </button>
               </div>
             </section>
@@ -200,29 +230,43 @@ export function ChessWorkspace() {
           inCheckSquare={game.checkSquare}
           lastMove={game.lastMove}
           pieces={game.pieces}
-          onSquareClick={ai.handleSquareAction}
-          onPiecePointerDown={ai.handlePiecePointer}
-          onPieceDrop={ai.requestPlayerMove}
+          onSquareClick={handleSquareAction}
+          onPiecePointerDown={handlePiecePointer}
+          onPieceDrop={handleDrop}
           pieceTheme={pieceTheme}
           boardTheme={boardTheme}
-          suggestedArrows={suggestedArrows}
+          suggestedArrows={ai.mode === 'puzzle' ? [] : suggestedArrows}
         />
         {game.pendingPromotion && <PromotionDialog color={game.pendingPromotion.color} onSelect={game.handlePromotion} />}
       </div>
 
-      <SidePanel
-        status={game.status}
-        history={game.history}
-        currentIndex={game.currentIndex}
-        positionsCount={game.positionsCount}
-        onNavigate={game.navigate}
-        onMoveToIndex={game.moveToIndex}
-        engineStatus={ai.engine.status}
-        engineError={ai.engine.error}
-        engineOutput={ai.engine.output}
-        pgn={game.pgn}
-        onImportPgn={game.loadPgn}
-      />
+      {ai.mode === 'puzzle' ? (
+        <PuzzlePanel
+          session={puzzle.session}
+          progress={puzzle.progress}
+          puzzleIndex={puzzle.currentPuzzleIndex}
+          puzzleCount={puzzle.puzzles.length}
+          onReset={puzzle.resetPuzzle}
+          onRetry={puzzle.retryPuzzle}
+          onNextPuzzle={puzzle.nextPuzzle}
+          onPreviousPuzzle={puzzle.previousPuzzle}
+          onRevealHint={puzzle.revealNextMove}
+        />
+      ) : (
+        <SidePanel
+          status={game.status}
+          history={game.history}
+          currentIndex={game.currentIndex}
+          positionsCount={game.positionsCount}
+          onNavigate={game.navigate}
+          onMoveToIndex={game.moveToIndex}
+          engineStatus={ai.engine.status}
+          engineError={ai.engine.error}
+          engineOutput={ai.engine.output}
+          pgn={game.pgn}
+          onImportPgn={game.loadPgn}
+        />
+      )}
     </section>
   );
 }
