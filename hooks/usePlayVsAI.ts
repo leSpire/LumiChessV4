@@ -10,7 +10,7 @@ import type { AiDifficultyConfig, AiSkillLevel } from '@/types/engine';
 export function usePlayVsAI() {
   const game = useChessGame();
   const engine = useChessEngine();
-  const [mode, setMode] = useState<'play-vs-ai' | 'analysis'>('play-vs-ai');
+  const [mode, setMode] = useState<'play-vs-ai' | 'analysis' | 'puzzle'>('play-vs-ai');
   const [playerColor, setPlayerColor] = useState<Color>('w');
   const [level, setLevel] = useState<AiSkillLevel>(DEFAULT_AI_LEVEL);
   const [showBestMove, setShowBestMove] = useState(true);
