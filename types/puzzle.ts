@@ -1,6 +1,6 @@
 import type { Color } from 'chess.js';
 
-export type PuzzleTheme =
+export type PuzzleCategoryId =
   | 'mateIn1'
   | 'mateIn2'
   | 'fork'
@@ -11,10 +11,16 @@ export type PuzzleTheme =
   | 'discoveredAttack'
   | 'endgameTactic';
 
+export interface PuzzleCategory {
+  id: PuzzleCategoryId;
+  label: string;
+  description: string;
+}
+
 export type PuzzleMoveRole = 'player' | 'opponent';
 
 export interface PuzzleMove {
-  lan: string;
+  uci: string;
   san?: string;
   role: PuzzleMoveRole;
   comment?: string;
@@ -23,51 +29,40 @@ export interface PuzzleMove {
 export interface Puzzle {
   id: string;
   title: string;
-  description?: string;
+  description: string;
+  category: PuzzleCategoryId;
+  themes: PuzzleCategoryId[];
+  rating: number;
   startFen: string;
+  sideToMove: Color;
   orientation?: Color;
-  playerToMove: Color;
-  themes: PuzzleTheme[];
-  rating?: number;
   solution: PuzzleMove[];
   explanation?: string;
   source?: string;
-  tags?: string[];
 }
 
 export type PuzzleStatus = 'idle' | 'ready' | 'in_progress' | 'failed' | 'solved';
 
 export interface PuzzleProgress {
-  currentMoveIndex: number;
-  totalMoves: number;
-  completedMoves: number;
+  currentPly: number;
+  totalPly: number;
+  completedPlayerMoves: number;
+  totalPlayerMoves: number;
   completionRatio: number;
 }
 
-export interface PuzzleAttemptState {
-  status: PuzzleStatus;
-  errors: number;
-  maxErrors: number;
-  feedback: string;
-  playedMoves: string[];
-  failedReason?: string;
-}
-
-export interface PuzzleResult {
-  puzzleId: string;
-  status: Extract<PuzzleStatus, 'failed' | 'solved'>;
-  errors: number;
-  playedMoves: string[];
-}
-
 export interface PuzzleSessionState {
-  activePuzzle: Puzzle | null;
+  activePuzzleId: string | null;
+  activeCategory: PuzzleCategoryId | 'all';
   status: PuzzleStatus;
   currentMoveIndex: number;
   errors: number;
-  maxErrors: number;
   feedback: string;
   playedMoves: string[];
-  result: PuzzleResult | null;
   isBusy: boolean;
+}
+
+export interface PuzzleCatalogValidationIssue {
+  puzzleId: string;
+  reason: string;
 }

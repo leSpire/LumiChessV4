@@ -5,7 +5,7 @@ import type { Square } from 'chess.js';
 import { ChessBoard } from '@/components/chess/ChessBoard';
 import { PromotionDialog } from '@/components/chess/PromotionDialog';
 import { SidePanel } from '@/components/chess/SidePanel';
-import { PuzzlePanel } from '@/components/puzzle/PuzzlePanel';
+import { PuzzlePanel } from '@/components/puzzles/PuzzlePanel';
 import { BOARD_THEMES } from '@/lib/boardThemes';
 import { PIECE_THEMES } from '@/lib/pieceThemes';
 import { playMoveSound, type SoundTheme } from '@/lib/sound';
@@ -86,7 +86,7 @@ export function ChessWorkspace() {
 
 
   useEffect(() => {
-    if (ai.mode === 'puzzle' && !puzzle.session.activePuzzle) {
+    if (ai.mode === 'puzzle' && !puzzle.activePuzzle) {
       puzzle.loadPuzzleByIndex(0);
     }
   }, [ai.mode, puzzle]);
@@ -164,7 +164,7 @@ export function ChessWorkspace() {
                   type="button"
                   onClick={() => {
                     ai.setMode('puzzle');
-                    if (!puzzle.session.activePuzzle) puzzle.loadPuzzleByIndex(0);
+                    if (!puzzle.activePuzzle) puzzle.loadPuzzleByIndex(0);
                   }}
                   className={`rounded-lg border px-2 py-1.5 transition ${
                     ai.mode === 'puzzle'
@@ -242,10 +242,14 @@ export function ChessWorkspace() {
 
       {ai.mode === 'puzzle' ? (
         <PuzzlePanel
+          categories={puzzle.categories}
+          filteredPuzzles={puzzle.filteredPuzzles}
+          activePuzzle={puzzle.activePuzzle}
+          activePuzzleIndex={puzzle.activePuzzleIndex}
           session={puzzle.session}
           progress={puzzle.progress}
-          puzzleIndex={puzzle.currentPuzzleIndex}
-          puzzleCount={puzzle.puzzles.length}
+          onCategorySelect={puzzle.selectCategory}
+          onPuzzleSelect={puzzle.selectPuzzleById}
           onReset={puzzle.resetPuzzle}
           onRetry={puzzle.retryPuzzle}
           onNextPuzzle={puzzle.nextPuzzle}
