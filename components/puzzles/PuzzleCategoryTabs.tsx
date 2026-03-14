@@ -1,10 +1,10 @@
 import clsx from 'clsx';
-import type { PuzzleCategory, PuzzleSessionState } from '@/types/puzzle';
+import type { PuzzleCategoryDefinition, PuzzleUiCategory } from '@/types/puzzle';
 
 interface PuzzleCategoryTabsProps {
-  categories: PuzzleCategory[];
-  activeCategory: PuzzleSessionState['activeCategory'];
-  onSelect: (category: PuzzleSessionState['activeCategory']) => void;
+  categories: PuzzleCategoryDefinition[];
+  activeCategory: PuzzleUiCategory;
+  onSelect: (category: PuzzleUiCategory) => void;
 }
 
 export function PuzzleCategoryTabs({ categories, activeCategory, onSelect }: PuzzleCategoryTabsProps) {
@@ -12,18 +12,6 @@ export function PuzzleCategoryTabs({ categories, activeCategory, onSelect }: Puz
     <div className="space-y-2">
       <p className="text-xs uppercase tracking-[0.18em] text-[#d8b77b]">Catégories</p>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => onSelect('all')}
-          className={clsx(
-            'rounded-full border px-3 py-1.5 text-xs transition',
-            activeCategory === 'all'
-              ? 'border-[#d9b36c] bg-[#d9ab5d2f] text-[#f8e7c5]'
-              : 'border-[#c6933d4f] text-[#d8c1a1] hover:bg-[#d9ab5d17]'
-          )}
-        >
-          Toutes
-        </button>
         {categories.map((category) => (
           <button
             key={category.id}
