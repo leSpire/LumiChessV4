@@ -250,6 +250,7 @@ export function ChessWorkspace() {
           progress={puzzle.progress}
           onCategorySelect={puzzle.selectCategory}
           onPuzzleSelect={puzzle.selectPuzzleById}
+          onApplyRatingRange={(min, max) => puzzle.setRatingRange({ min, max })}
           onReset={puzzle.resetPuzzle}
           onRetry={puzzle.retryPuzzle}
           onNextPuzzle={puzzle.nextPuzzle}
