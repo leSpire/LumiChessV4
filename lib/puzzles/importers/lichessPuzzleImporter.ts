@@ -19,6 +19,7 @@ const LICHESS_THEME_MAP: Record<string, PuzzleTheme | undefined> = {
   doubleAttack: 'doubleAttack',
   attraction: 'attraction',
   deflection: 'deflection',
+  sacrifice: 'sacrifice',
   promotion: 'promotion',
   endgame: 'endgameTechnique'
 };
@@ -82,6 +83,7 @@ function buildTitle(themes: PuzzleTheme[], rating: number): string {
   if (themes.includes('mateIn2')) return `Mat en 2 · ${rating}`;
   if (themes.includes('fork')) return `Tactique fourchette · ${rating}`;
   if (themes.includes('pin')) return `Tactique clouage · ${rating}`;
+  if (themes.includes('sacrifice')) return `Sacrifice tactique · ${rating}`;
   return `Puzzle tactique · ${rating}`;
 }
 

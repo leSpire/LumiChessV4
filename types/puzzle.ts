@@ -15,6 +15,7 @@ export type PuzzleTheme =
   | 'doubleAttack'
   | 'attraction'
   | 'deflection'
+  | 'sacrifice'
   | 'promotion'
   | 'endgameTechnique';
 
