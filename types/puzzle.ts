@@ -2,15 +2,7 @@ import type { Color } from 'chess.js';
 
 export type PuzzleId = string;
 
-export type PuzzleSourceType = 'lichess-puzzle' | 'lichess-generated' | 'local' | 'curated';
-
-export type PuzzlePrimaryCategory =
-  | 'mate'
-  | 'tactics'
-  | 'endgame'
-  | 'promotion'
-  | 'advantage'
-  | 'mixed';
+export type PuzzleCategory = 'mate' | 'tactic' | 'endgame';
 
 export type PuzzleTheme =
   | 'mateIn1'
@@ -23,16 +15,14 @@ export type PuzzleTheme =
   | 'doubleAttack'
   | 'attraction'
   | 'deflection'
-  | 'sacrifice'
-  | 'endgame'
   | 'promotion'
-  | 'hangingPiece'
-  | 'clearance'
-  | 'xRay'
-  | 'interference'
-  | 'quietMove';
+  | 'endgameTechnique';
 
-export type PuzzleUiCategory = 'all' | 'mate' | 'tactics' | 'endgame';
+export type PuzzleObjective = 'mate' | 'materialGain' | 'promotion' | 'endgameTechnique';
+
+export type PuzzleSourceType = 'lichess-open-database' | 'lichess-puzzler-inspired' | 'local-curated';
+
+export type PuzzleUiCategory = 'all' | PuzzleCategory;
 
 export interface PuzzleCategoryDefinition {
   id: PuzzleUiCategory;
@@ -40,25 +30,49 @@ export interface PuzzleCategoryDefinition {
   description: string;
 }
 
-export interface CanonicalPuzzle {
-  id: PuzzleId;
-  startFen: string;
-  initialPlayerToMove: Color;
-  solutionLineUci: string[];
-  rating: number;
-  popularity: number;
-  themes: PuzzleTheme[];
-  category: PuzzlePrimaryCategory;
-  sourceGameUrl?: string;
-  openingTags: string[];
-  explanation?: string;
-  metadata: Record<string, string | number | boolean | null>;
-  sourceType: PuzzleSourceType;
+export interface PuzzleSolutionMove {
+  uci: string;
+  actor: Color;
+  san?: string;
 }
 
-export interface PuzzleRecord extends CanonicalPuzzle {
+export interface PuzzleRecord {
+  id: PuzzleId;
   title: string;
-  shortDescription: string;
+  description: string;
+  startFen: string;
+  playerToMove: Color;
+  orientation: Color;
+  category: PuzzleCategory;
+  themes: PuzzleTheme[];
+  objective: PuzzleObjective;
+  rating: number;
+  popularity: number;
+  solutionLine: PuzzleSolutionMove[];
+  explanation?: string;
+  source: string;
+  sourceGameUrl?: string;
+  sourceType: PuzzleSourceType;
+  validated: boolean;
+  validationErrors: string[];
+  metadata: Record<string, string | number | boolean | null>;
+}
+
+export interface PuzzleValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface InvalidPuzzleReport {
+  puzzleId: string;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface PuzzlePackValidationResult {
+  valid: PuzzleRecord[];
+  invalid: InvalidPuzzleReport[];
 }
 
 export interface PuzzleQuery {
@@ -71,7 +85,9 @@ export interface PuzzleQuery {
   sortBy?: 'rating' | 'popularity' | 'freshness';
 }
 
-export type PuzzleSessionStatus = 'idle' | 'ready' | 'in_progress' | 'failed' | 'solved';
+export type PuzzleSessionStatus = 'idle' | 'loading' | 'ready' | 'in_progress' | 'solved' | 'failed' | 'invalid';
+
+export type PuzzleCompletionState = 'none' | 'solved' | 'failed';
 
 export interface PuzzleProgress {
   currentPly: number;
@@ -82,17 +98,24 @@ export interface PuzzleProgress {
 export interface PuzzleSessionState {
   activePuzzleId: PuzzleId | null;
   status: PuzzleSessionStatus;
+  completionState: PuzzleCompletionState;
   currentMoveIndex: number;
-  errors: number;
+  errors: string[];
   feedback: string;
   playedMoves: string[];
   activeCategory: PuzzleUiCategory;
+  canGoNext: boolean;
+  canRetry: boolean;
   isBusy: boolean;
 }
 
-export interface PuzzleValidationIssue {
-  puzzleId: string;
-  reason: string;
+export interface PuzzleCatalogState {
+  activeCategory: PuzzleUiCategory;
+  activeThemes: PuzzleTheme[];
+  ratingRange: {
+    min?: number;
+    max?: number;
+  };
 }
 
 export interface LichessPuzzleCsvRow {

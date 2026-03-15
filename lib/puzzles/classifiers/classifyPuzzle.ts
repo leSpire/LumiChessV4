@@ -1,4 +1,4 @@
-import type { PuzzlePrimaryCategory, PuzzleTheme } from '@/types/puzzle';
+import type { PuzzleCategory, PuzzleTheme } from '@/types/puzzle';
 
 const LICHESS_THEME_MAP: Record<string, PuzzleTheme | undefined> = {
   mateIn1: 'mateIn1',
@@ -11,14 +11,8 @@ const LICHESS_THEME_MAP: Record<string, PuzzleTheme | undefined> = {
   doubleAttack: 'doubleAttack',
   attraction: 'attraction',
   deflection: 'deflection',
-  sacrifice: 'sacrifice',
-  endgame: 'endgame',
   promotion: 'promotion',
-  hangingPiece: 'hangingPiece',
-  clearance: 'clearance',
-  xRayAttack: 'xRay',
-  interference: 'interference',
-  quietMove: 'quietMove'
+  endgame: 'endgameTechnique'
 };
 
 export function mapLichessThemes(themeString: string): PuzzleTheme[] {
@@ -32,18 +26,16 @@ export function mapLichessThemes(themeString: string): PuzzleTheme[] {
   return [...new Set(themes)];
 }
 
-export function classifyPrimaryCategory(themes: PuzzleTheme[]): PuzzlePrimaryCategory {
+export function classifyPrimaryCategory(themes: PuzzleTheme[]): PuzzleCategory {
   if (themes.some((theme) => theme.startsWith('mateIn'))) return 'mate';
-  if (themes.includes('endgame')) return 'endgame';
-  if (themes.includes('promotion')) return 'promotion';
-  if (themes.length === 0) return 'mixed';
-  return 'tactics';
+  if (themes.includes('endgameTechnique') || themes.includes('promotion')) return 'endgame';
+  return 'tactic';
 }
 
 export function buildPuzzleTitle(themes: PuzzleTheme[], rating: number): string {
   if (themes.includes('mateIn1')) return `Mat immédiat · ${rating}`;
   if (themes.includes('mateIn2')) return `Forçage en 2 · ${rating}`;
   if (themes.includes('fork')) return `Fourchette tactique · ${rating}`;
-  if (themes.includes('endgame')) return `Finale active · ${rating}`;
+  if (themes.includes('endgameTechnique')) return `Finale active · ${rating}`;
   return `Puzzle tactique · ${rating}`;
 }

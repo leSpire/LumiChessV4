@@ -1,66 +1,87 @@
 import { Chess, type PieceSymbol, type Square } from 'chess.js';
-import type { CanonicalPuzzle, PuzzleValidationIssue } from '@/types/puzzle';
+import type { PuzzleRecord, PuzzleValidationResult } from '@/types/puzzle';
 
 const normalizeUci = (uci: string) => uci.trim().toLowerCase();
 
 const toUci = (from: Square, to: Square, promotion?: PieceSymbol) => `${from}${to}${promotion ?? ''}`.toLowerCase();
 
-export function validatePuzzle(puzzle: CanonicalPuzzle): { ok: true } | { ok: false; reason: string } {
-  if (!puzzle.solutionLineUci.length) {
-    return { ok: false, reason: 'Solution vide.' };
-  }
-
-  try {
-    const chess = new Chess(puzzle.startFen);
-    if (chess.turn() !== puzzle.initialPlayerToMove) {
-      return { ok: false, reason: 'Side to move incohérent avec la FEN.' };
-    }
-
-    for (let index = 0; index < puzzle.solutionLineUci.length; index += 1) {
-      const step = normalizeUci(puzzle.solutionLineUci[index]);
-      if (step.length < 4) {
-        return { ok: false, reason: `UCI invalide à l'étape ${index + 1}.` };
-      }
-
-      const legal = chess
-        .moves({ verbose: true })
-        .find((move) => toUci(move.from, move.to, move.promotion) === step);
-
-      if (!legal) {
-        return { ok: false, reason: `Coup illégal à l'étape ${index + 1}: ${step}.` };
-      }
-
-      chess.move(legal);
-    }
-
-    return { ok: true };
-  } catch {
-    return { ok: false, reason: 'FEN invalide ou ligne non rejouable.' };
-  }
+function isValidUciFormat(uci: string): boolean {
+  return /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci);
 }
 
-export function validateCatalog(puzzles: CanonicalPuzzle[]): { valid: CanonicalPuzzle[]; issues: PuzzleValidationIssue[] } {
-  const ids = new Set<string>();
-  const valid: CanonicalPuzzle[] = [];
-  const issues: PuzzleValidationIssue[] = [];
+export function validatePuzzle(puzzle: PuzzleRecord): PuzzleValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
-  puzzles.forEach((puzzle) => {
-    if (ids.has(puzzle.id)) {
-      issues.push({ puzzleId: puzzle.id, reason: 'ID dupliqué.' });
+  const minimumLength = puzzle.objective === 'mate' && puzzle.themes.includes('mateIn1') ? 1 : 2;
+  if (puzzle.solutionLine.length < minimumLength) {
+    errors.push(`La solution est trop courte (minimum ${minimumLength} demi-coups).`);
+  }
+
+  let chess: Chess;
+  try {
+    chess = new Chess(puzzle.startFen);
+  } catch {
+    return {
+      valid: false,
+      errors: ['FEN invalide.'],
+      warnings
+    };
+  }
+
+  if (chess.turn() !== puzzle.playerToMove) {
+    errors.push('Le camp au trait est incohérent avec la FEN.');
+  }
+
+  if (!puzzle.solutionLine.length) {
+    errors.push('La ligne de solution est vide.');
+  }
+
+  puzzle.solutionLine.forEach((step, index) => {
+    const expectedActor = chess.turn();
+    const uci = normalizeUci(step.uci);
+
+    if (step.actor !== expectedActor) {
+      errors.push(`Acteur incohérent au coup ${index + 1} (${step.actor} attendu ${expectedActor}).`);
       return;
     }
-    ids.add(puzzle.id);
 
-    const result = validatePuzzle(puzzle);
-    if (!result.ok) {
-      issues.push({ puzzleId: puzzle.id, reason: result.reason });
+    if (!isValidUciFormat(uci)) {
+      errors.push(`Format UCI invalide au coup ${index + 1}: ${uci}.`);
       return;
     }
 
-    valid.push(puzzle);
+    const legalMove = chess
+      .moves({ verbose: true })
+      .find((move) => toUci(move.from, move.to, move.promotion) === uci);
+
+    if (!legalMove) {
+      errors.push(`Coup illégal au coup ${index + 1}: ${uci}.`);
+      return;
+    }
+
+    chess.move(legalMove);
   });
 
-  return { valid, issues };
+  if (errors.length === 0) {
+    if (puzzle.objective === 'mate' && !chess.isCheckmate()) {
+      errors.push("Objectif 'mate' annoncé mais la position finale n'est pas un mat.");
+    }
+
+    if (puzzle.objective === 'materialGain' && chess.isStalemate()) {
+      warnings.push("La ligne se termine par pat pour un puzzle de gain matériel (à vérifier).");
+    }
+
+    if (puzzle.objective === 'promotion' && !puzzle.solutionLine.some((move) => move.uci.length === 5)) {
+      errors.push("Objectif 'promotion' annoncé sans coup de promotion dans la ligne.");
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings
+  };
 }
 
 export function isMoveMatchingExpectedUci(
