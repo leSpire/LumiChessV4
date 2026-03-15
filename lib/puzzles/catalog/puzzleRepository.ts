@@ -1,58 +1,58 @@
 import devPack from '@/data/puzzles/dev-pack.json';
-import type { CanonicalPuzzle, PuzzleId, PuzzleQuery, PuzzleTheme, PuzzleUiCategory } from '@/types/puzzle';
+import type { PuzzleId, PuzzleQuery, PuzzleRecord, PuzzleTheme, PuzzleUiCategory } from '@/types/puzzle';
 import { runPuzzleQuery } from '@/lib/puzzles/selectors/puzzleSelectors';
-import { validateCatalog } from '@/lib/puzzles/validators/validatePuzzle';
+import { validatePuzzlePack } from '@/lib/puzzles/validators/validatePuzzlePack';
 
-const LOCAL_PUZZLES = devPack as CanonicalPuzzle[];
+const LOCAL_PUZZLES = devPack as PuzzleRecord[];
 
 export class PuzzleRepository {
-  private readonly puzzles: CanonicalPuzzle[];
+  private readonly puzzles: PuzzleRecord[];
 
-  constructor(seed: CanonicalPuzzle[] = LOCAL_PUZZLES) {
-    this.puzzles = validateCatalog(seed).valid;
+  constructor(seed: PuzzleRecord[] = LOCAL_PUZZLES) {
+    const validation = validatePuzzlePack(seed);
+    this.puzzles = validation.valid;
+
+    if (validation.invalid.length) {
+      // eslint-disable-next-line no-console
+      console.warn('[LumiChess][puzzles] Invalid puzzles filtered out:', validation.invalid);
+    }
   }
 
-  getPuzzleById(id: PuzzleId): CanonicalPuzzle | null {
+  getPuzzleById(id: PuzzleId): PuzzleRecord | null {
     return this.puzzles.find((puzzle) => puzzle.id === id) ?? null;
   }
 
-  getNextPuzzle(currentId: PuzzleId, query: PuzzleQuery = {}): CanonicalPuzzle | null {
+  getNextPuzzle(currentId: PuzzleId, query: PuzzleQuery = {}): PuzzleRecord | null {
     const scoped = runPuzzleQuery(this.puzzles, query);
     const index = scoped.findIndex((puzzle) => puzzle.id === currentId);
     if (index < 0 || index === scoped.length - 1) return scoped[0] ?? null;
     return scoped[index + 1] ?? null;
   }
 
-  getPreviousPuzzle(currentId: PuzzleId, query: PuzzleQuery = {}): CanonicalPuzzle | null {
+  getPreviousPuzzle(currentId: PuzzleId, query: PuzzleQuery = {}): PuzzleRecord | null {
     const scoped = runPuzzleQuery(this.puzzles, query);
     const index = scoped.findIndex((puzzle) => puzzle.id === currentId);
     if (index <= 0) return scoped[scoped.length - 1] ?? null;
     return scoped[index - 1] ?? null;
   }
 
-  getRandomPuzzleByCategory(category: PuzzleUiCategory): CanonicalPuzzle | null {
-    const scoped = runPuzzleQuery(this.puzzles, { category });
-    if (!scoped.length) return null;
-    return scoped[Math.floor(Math.random() * scoped.length)] ?? null;
-  }
-
-  getPuzzleBatch(query: PuzzleQuery = {}): CanonicalPuzzle[] {
+  getPuzzleBatch(query: PuzzleQuery = {}): PuzzleRecord[] {
     return runPuzzleQuery(this.puzzles, query);
   }
 
-  filterByCategory(category: PuzzleUiCategory): CanonicalPuzzle[] {
+  filterByCategory(category: PuzzleUiCategory): PuzzleRecord[] {
     return runPuzzleQuery(this.puzzles, { category });
   }
 
-  filterByThemes(themes: PuzzleTheme[]): CanonicalPuzzle[] {
+  filterByThemes(themes: PuzzleTheme[]): PuzzleRecord[] {
     return runPuzzleQuery(this.puzzles, { themes });
   }
 
-  filterByRatingRange(minRating?: number, maxRating?: number): CanonicalPuzzle[] {
+  filterByRatingRange(minRating?: number, maxRating?: number): PuzzleRecord[] {
     return runPuzzleQuery(this.puzzles, { minRating, maxRating });
   }
 
-  getAll(): CanonicalPuzzle[] {
+  getAll(): PuzzleRecord[] {
     return [...this.puzzles];
   }
 }

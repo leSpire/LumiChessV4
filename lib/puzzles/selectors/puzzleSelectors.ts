@@ -1,18 +1,16 @@
-import type { CanonicalPuzzle, PuzzleQuery, PuzzleTheme, PuzzleUiCategory } from '@/types/puzzle';
+import type { PuzzleQuery, PuzzleRecord, PuzzleTheme, PuzzleUiCategory } from '@/types/puzzle';
 
-export function isPuzzleInUiCategory(puzzle: CanonicalPuzzle, category: PuzzleUiCategory): boolean {
+export function isPuzzleInUiCategory(puzzle: PuzzleRecord, category: PuzzleUiCategory): boolean {
   if (category === 'all') return true;
-  if (category === 'mate') return puzzle.category === 'mate';
-  if (category === 'endgame') return puzzle.category === 'endgame';
-  return puzzle.category !== 'mate' && puzzle.category !== 'endgame';
+  return puzzle.category === category;
 }
 
-export function filterByThemes(puzzles: CanonicalPuzzle[], themes: PuzzleTheme[] = []): CanonicalPuzzle[] {
+export function filterByThemes(puzzles: PuzzleRecord[], themes: PuzzleTheme[] = []): PuzzleRecord[] {
   if (!themes.length) return puzzles;
   return puzzles.filter((puzzle) => themes.every((theme) => puzzle.themes.includes(theme)));
 }
 
-export function filterByRatingRange(puzzles: CanonicalPuzzle[], minRating?: number, maxRating?: number): CanonicalPuzzle[] {
+export function filterByRatingRange(puzzles: PuzzleRecord[], minRating?: number, maxRating?: number): PuzzleRecord[] {
   return puzzles.filter((puzzle) => {
     if (typeof minRating === 'number' && puzzle.rating < minRating) return false;
     if (typeof maxRating === 'number' && puzzle.rating > maxRating) return false;
@@ -20,14 +18,14 @@ export function filterByRatingRange(puzzles: CanonicalPuzzle[], minRating?: numb
   });
 }
 
-export function sortPuzzles(puzzles: CanonicalPuzzle[], sortBy: PuzzleQuery['sortBy'] = 'rating'): CanonicalPuzzle[] {
+export function sortPuzzles(puzzles: PuzzleRecord[], sortBy: PuzzleQuery['sortBy'] = 'rating'): PuzzleRecord[] {
   const copy = [...puzzles];
   if (sortBy === 'popularity') return copy.sort((a, b) => b.popularity - a.popularity);
-  if (sortBy === 'freshness') return copy.sort((a, b) => String(b.metadata.generatedAt).localeCompare(String(a.metadata.generatedAt)));
+  if (sortBy === 'freshness') return copy.sort((a, b) => String(b.metadata.importedAt).localeCompare(String(a.metadata.importedAt)));
   return copy.sort((a, b) => a.rating - b.rating);
 }
 
-export function runPuzzleQuery(puzzles: CanonicalPuzzle[], query: PuzzleQuery): CanonicalPuzzle[] {
+export function runPuzzleQuery(puzzles: PuzzleRecord[], query: PuzzleQuery): PuzzleRecord[] {
   const byCategory = query.category ? puzzles.filter((puzzle) => isPuzzleInUiCategory(puzzle, query.category!)) : puzzles;
   const byThemes = filterByThemes(byCategory, query.themes);
   const byRating = filterByRatingRange(byThemes, query.minRating, query.maxRating);
