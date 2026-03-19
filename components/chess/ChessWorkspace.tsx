@@ -19,6 +19,14 @@ const uciToArrow = (uci?: string): { from: Square; to: Square } | null => {
   return { from, to };
 };
 
+const normalizeRequestedMode = (requestedMode: string | null): 'play-vs-ai' | 'analysis' | 'puzzle' => {
+  if (requestedMode === 'play-vs-ai' || requestedMode === 'analysis' || requestedMode === 'puzzle') {
+    return requestedMode;
+  }
+
+  return 'analysis';
+};
+
 export function ChessWorkspace() {
   const ai = usePlayVsAI();
   const puzzle = usePuzzleTraining();
@@ -29,16 +37,10 @@ export function ChessWorkspace() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showLegalMoves, setShowLegalMoves] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [modeChosen, setModeChosen] = useState(false);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const requestedMode = searchParams.get('mode');
-
-    if (requestedMode === 'play-vs-ai' || requestedMode === 'analysis' || requestedMode === 'puzzle') {
-      ai.setMode(requestedMode);
-      setModeChosen(true);
-    }
+    ai.setMode(normalizeRequestedMode(searchParams.get('mode')));
 
     const savedPieceTheme = window.localStorage.getItem('lumichess-piece-theme');
     if (savedPieceTheme) setPieceTheme(savedPieceTheme);
@@ -52,7 +54,7 @@ export function ChessWorkspace() {
     if (savedSoundEnabled) setSoundEnabled(savedSoundEnabled === 'true');
     const savedShowLegalMoves = window.localStorage.getItem('lumichess-show-legal-moves');
     if (savedShowLegalMoves) setShowLegalMoves(savedShowLegalMoves === 'true');
-  }, []);
+  }, [ai]);
 
   useEffect(() => window.localStorage.setItem('lumichess-piece-theme', pieceTheme), [pieceTheme]);
   useEffect(() => window.localStorage.setItem('lumichess-board-theme', boardTheme), [boardTheme]);
@@ -96,17 +98,15 @@ export function ChessWorkspace() {
     return arrows;
   }, [ai.engine.output.pv?.moves, ai.engine.output.pvLines, ai.engineMultiPv, ai.showSuggestionArrows, ai.showThreats]);
 
-
   useEffect(() => {
     if (ai.mode === 'puzzle' && !puzzle.activePuzzle) {
       puzzle.loadPuzzleByIndex(0);
     }
   }, [ai.mode, puzzle]);
 
-  const chooseMode = (mode: 'play-vs-ai' | 'analysis' | 'puzzle') => {
+  const handleModeChange = (mode: 'play-vs-ai' | 'analysis' | 'puzzle') => {
     ai.setMode(mode);
-    window.history.replaceState({}, '', `/?mode=${mode}`);
-    setModeChosen(true);
+    window.history.replaceState({}, '', mode === 'analysis' ? '/' : `/?mode=${mode}`);
   };
 
   const handleSquareAction = ai.mode === 'puzzle' ? puzzle.game.handleSquareAction : ai.handleSquareAction;
@@ -115,25 +115,6 @@ export function ChessWorkspace() {
 
   return (
     <section className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-      {!modeChosen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#090704f0] p-4">
-          <div className="w-full max-w-xl rounded-3xl border border-[#c6933d70] bg-[#14100be8] p-6 text-center text-[#f4e4c9] shadow-2xl">
-            <p className="mb-2 text-sm uppercase tracking-[0.2em] text-[#d9b36c]">Bienvenue</p>
-            <h2 className="mb-5 text-2xl font-semibold">Choisis ton mode de jeu</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <button type="button" onClick={() => chooseMode('play-vs-ai')} className="rounded-xl border border-[#d9b36c] bg-[#d9ab5d2c] px-4 py-3 font-medium hover:bg-[#d9ab5d3f]">
-                Jouer contre IA
-              </button>
-              <button type="button" onClick={() => chooseMode('analysis')} className="rounded-xl border border-[#c6933d70] px-4 py-3 font-medium hover:bg-[#d9ab5d1f]">
-                Analyse de partie
-              </button>
-              <button type="button" onClick={() => chooseMode('puzzle')} className="rounded-xl border border-[#c6933d70] px-4 py-3 font-medium hover:bg-[#d9ab5d1f]">
-                Puzzles tactiques
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <div>
         <div className="mb-3 flex justify-end">
           <button
@@ -153,7 +134,7 @@ export function ChessWorkspace() {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => ai.setMode('play-vs-ai')}
+                  onClick={() => handleModeChange('play-vs-ai')}
                   className={`rounded-lg border px-2 py-1.5 transition ${
                     ai.mode === 'play-vs-ai'
                       ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
@@ -164,7 +145,7 @@ export function ChessWorkspace() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => ai.setMode('analysis')}
+                  onClick={() => handleModeChange('analysis')}
                   className={`rounded-lg border px-2 py-1.5 transition ${
                     ai.mode === 'analysis'
                       ? 'border-[#d9b36c] bg-[#d9ab5d2c] text-[#f8e8c8]'
@@ -176,7 +157,7 @@ export function ChessWorkspace() {
                 <button
                   type="button"
                   onClick={() => {
-                    ai.setMode('puzzle');
+                    handleModeChange('puzzle');
                     if (!puzzle.activePuzzle) puzzle.loadPuzzleByIndex(0);
                   }}
                   className={`rounded-lg border px-2 py-1.5 transition ${
