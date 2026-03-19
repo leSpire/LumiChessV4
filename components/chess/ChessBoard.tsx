@@ -70,7 +70,9 @@ export function ChessBoard({
   const files = getDisplayFiles(orientation);
   const ranks = getDisplayRanks(orientation);
   const legalTargetSet = useMemo(() => new Set(legalTargets), [legalTargets]);
+  const markedSquaresSet = useMemo(() => new Set(markedSquares), [markedSquares]);
   const selectedBoardTheme = getBoardTheme(boardTheme);
+  const pieceMap = useMemo(() => new Map(pieces.map((piece) => [piece.square, piece])), [pieces]);
 
   const piecePosition = (square: Square) => {
     const { file, rank } = squareToCoords(square);
@@ -86,7 +88,6 @@ export function ChessBoard({
       y: (row + 0.5) * 12.5
     };
   };
-
 
   useEffect(() => {
     if (!dragState || !boardRef.current) return;
@@ -123,6 +124,8 @@ export function ChessBoard({
       }
     };
   }, [rightDragState]);
+
+  const draggedPiece = dragState ? pieceMap.get(dragState.from) ?? null : null;
 
   return (
     <section className="w-full max-w-[min(100vw-2rem,820px)]" aria-label="Échiquier LumiChess">
@@ -198,16 +201,17 @@ export function ChessBoard({
             const isTarget = legalTargetSet.has(square);
             const isLastMove = lastMove?.from === square || lastMove?.to === square;
             const isCheck = inCheckSquare === square;
-            const isMarked = markedSquares.includes(square);
-            const targetPiece = pieces.find((piece) => piece.square === square);
-            const isCaptureTarget = Boolean(isTarget && targetPiece && targetPiece.color !== turn);
+            const isMarked = markedSquaresSet.has(square);
+            const piece = pieceMap.get(square);
+            const isCaptureTarget = Boolean(isTarget && piece && piece.color !== turn);
+            const isDragging = dragState?.from === square;
 
             return (
               <button
                 key={square}
                 type="button"
                 className={clsx(
-                  'group relative flex items-center justify-center border-0 outline-none transition-colors duration-100 focus-visible:z-[6] focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset',
+                  'group relative border-0 outline-none transition-colors duration-100 focus-visible:z-[6] focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset',
                   isLightSquare(square)
                     ? selectedBoardTheme.lightSquareClass
                     : selectedBoardTheme.darkSquareClass
@@ -215,20 +219,46 @@ export function ChessBoard({
                 onClick={() => onSquareClick(square)}
                 aria-label={`Case ${square}`}
               >
-                {isLastMove && <span className="pointer-events-none absolute inset-0 bg-[rgba(255,235,59,0.22)]" />}
-                {isSelected && <span className="pointer-events-none absolute inset-0 bg-[rgba(255,215,0,0.28)]" />}
-                {isCheck && <span className="pointer-events-none absolute inset-0 bg-[rgba(220,38,38,0.28)]" />}
-                {isMarked && <span className="pointer-events-none absolute inset-2 rounded-full border-4 border-[#3ea9ffaa]" />}
-                {showLegalMoves && isTarget && !isCaptureTarget && (
-                  <span className="pointer-events-none absolute h-[22%] w-[22%] rounded-full bg-[rgba(0,0,0,0.18)] transition-opacity duration-100" />
+                <span className="pointer-events-none absolute inset-0 z-[1]" aria-hidden="true" />
+
+                {(isLastMove || isSelected || isCheck || isMarked || (showLegalMoves && isTarget)) && (
+                  <span className="pointer-events-none absolute inset-0 z-[2]" aria-hidden="true">
+                    {isLastMove && <span className="absolute inset-0 bg-[rgba(255,235,59,0.22)]" />}
+                    {isSelected && <span className="absolute inset-0 bg-[rgba(255,215,0,0.28)]" />}
+                    {isCheck && <span className="absolute inset-0 bg-[rgba(220,38,38,0.28)]" />}
+                    {isMarked && <span className="absolute inset-2 rounded-full border-4 border-[#3ea9ffaa]" />}
+                    {showLegalMoves && isTarget && !isCaptureTarget && (
+                      <span className="absolute left-1/2 top-1/2 h-[22%] w-[22%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgba(0,0,0,0.18)] transition-opacity duration-100" />
+                    )}
+                    {showLegalMoves && isCaptureTarget && (
+                      <span className="absolute inset-[10%] rounded-full shadow-[inset_0_0_0_6px_rgba(0,0,0,0.18)]" />
+                    )}
+                  </span>
                 )}
-                {showLegalMoves && isCaptureTarget && (
-                  <span className="pointer-events-none absolute inset-[10%] rounded-full shadow-[inset_0_0_0_6px_rgba(0,0,0,0.18)]" />
+
+                {piece && (
+                  <span
+                    className={clsx(
+                      'absolute inset-0 z-[3] flex items-center justify-center',
+                      isDragging ? 'opacity-0' : 'opacity-100'
+                    )}
+                    aria-hidden="true"
+                  >
+                    <span className="h-[84%] w-[84%]">
+                      <ChessPiece
+                        type={piece.type}
+                        color={piece.color}
+                        themeId={pieceTheme}
+                        isSelected={isSelected}
+                      />
+                    </span>
+                  </span>
                 )}
+
                 {col === 0 && (
                   <span
                     className={clsx(
-                      'pointer-events-none absolute left-[8%] top-[6%] text-[11px] font-medium leading-none sm:text-xs',
+                      'pointer-events-none absolute left-[8%] top-[6%] z-[4] text-[11px] font-medium leading-none sm:text-xs',
                       isLightSquare(square) ? selectedBoardTheme.lightCoordinateClass : selectedBoardTheme.darkCoordinateClass
                     )}
                   >
@@ -238,12 +268,33 @@ export function ChessBoard({
                 {row === 7 && (
                   <span
                     className={clsx(
-                      'pointer-events-none absolute bottom-[6%] right-[8%] text-[11px] font-medium leading-none sm:text-xs',
+                      'pointer-events-none absolute bottom-[6%] right-[8%] z-[4] text-[11px] font-medium leading-none sm:text-xs',
                       isLightSquare(square) ? selectedBoardTheme.lightCoordinateClass : selectedBoardTheme.darkCoordinateClass
                     )}
                   >
                     {displayFile}
                   </span>
+                )}
+
+                {piece && (
+                  <span
+                    className="absolute inset-0 z-[5]"
+                    onPointerDown={(evt) => {
+                      if (evt.button !== 0 || !boardRef.current) return;
+                      const canMove = onPiecePointerDown(square);
+                      if (!canMove) return;
+                      evt.preventDefault();
+                      evt.stopPropagation();
+                      const rect = boardRef.current.getBoundingClientRect();
+                      evt.currentTarget.setPointerCapture(evt.pointerId);
+                      setDragState({
+                        from: square,
+                        x: evt.clientX - rect.left,
+                        y: evt.clientY - rect.top
+                      });
+                    }}
+                    aria-hidden="true"
+                  />
                 )}
               </button>
             );
@@ -307,57 +358,28 @@ export function ChessBoard({
             )}
           </svg>
 
-          {pieces.map((piece) => {
-            const { row, col } = piecePosition(piece.square);
-            const isDragging = dragState?.from === piece.square;
-            const width = '12.5%';
-            const left = `${col * 12.5}%`;
-            const top = `${row * 12.5}%`;
-
-            return (
-              <motion.button
-                key={`${piece.square}-${piece.type}-${piece.color}`}
-                type="button"
-                className={clsx('absolute z-10 p-[7%] touch-none outline-none', isDragging ? 'z-20 cursor-grabbing' : 'cursor-grab')}
-                style={
-                  isDragging
-                    ? {
-                        width,
-                        left: `calc(${((dragState?.x ?? 0) / (boardRef.current?.clientWidth ?? 1)) * 100}% - 6.25%)`,
-                        top: `calc(${((dragState?.y ?? 0) / (boardRef.current?.clientHeight ?? 1)) * 100}% - 6.25%)`
-                      }
-                    : { width, left, top }
-                }
-                animate={isDragging ? { scale: 1.03 } : { left, top, scale: 1 }}
-                transition={
-                  isDragging
-                    ? { duration: 0.08 }
-                    : { duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }
-                }
-                onPointerDown={(evt) => {
-                  if (evt.button !== 0 || !boardRef.current) return;
-                  const canMove = onPiecePointerDown(piece.square);
-                  if (!canMove) return;
-                  const rect = boardRef.current.getBoundingClientRect();
-                  evt.currentTarget.setPointerCapture(evt.pointerId);
-                  setDragState({
-                    from: piece.square,
-                    x: evt.clientX - rect.left,
-                    y: evt.clientY - rect.top
-                  });
-                }}
-                aria-label={`Pièce ${piece.color === 'w' ? 'blanche' : 'noire'} ${piece.type} sur ${piece.square}`}
-              >
+          {draggedPiece && dragState && (
+            <motion.div
+              className="pointer-events-none absolute z-[20] flex h-[12.5%] w-[12.5%] touch-none items-center justify-center"
+              style={{
+                left: `calc(${((dragState.x / (boardRef.current?.clientWidth ?? 1)) * 100).toFixed(4)}% - 6.25%)`,
+                top: `calc(${((dragState.y / (boardRef.current?.clientHeight ?? 1)) * 100).toFixed(4)}% - 6.25%)`
+              }}
+              animate={{ scale: 1.04 }}
+              transition={{ duration: 0.08 }}
+              aria-hidden="true"
+            >
+              <div className="h-[84%] w-[84%]">
                 <ChessPiece
-                  type={piece.type}
-                  color={piece.color}
+                  type={draggedPiece.type}
+                  color={draggedPiece.color}
                   themeId={pieceTheme}
-                  isDragging={isDragging}
-                  isSelected={selectedSquare === piece.square}
+                  isDragging
+                  isSelected={selectedSquare === draggedPiece.square}
                 />
-              </motion.button>
-            );
-          })}
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
 

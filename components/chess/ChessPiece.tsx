@@ -13,7 +13,7 @@ interface ChessPieceProps {
   isSelected?: boolean;
 }
 
-const baseClasses = 'h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]';
+const baseClasses = 'block h-full w-full select-none object-contain drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]';
 
 function PieceFrame({ children, color }: { children: React.ReactNode; color: Color }) {
   const white = color === 'w';
@@ -34,7 +34,7 @@ function PieceFrame({ children, color }: { children: React.ReactNode; color: Col
 
 function ClassicPiece({ type, color }: { type: PieceSymbol; color: Color }) {
   const fill = `url(#piece-main-${color})`;
-  const stroke = color === 'w' ? '#523a1f' : '#d8b073';
+  const stroke = color === 'w' ? '#4b341c' : '#f2d39a';
 
   const shared = {
     fill,
@@ -75,7 +75,7 @@ export function ChessPiece({ type, color, themeId = "classic", isDragging, isSel
   return (
     <div
       className={clsx(
-        'relative h-full w-full transition duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+        'relative flex h-full w-full items-center justify-center overflow-visible opacity-100 visible transition duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
         isDragging || isSelected
           ? 'scale-[1.03] drop-shadow-[0_4px_8px_rgba(0,0,0,0.28)]'
           : 'scale-100 drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]'
