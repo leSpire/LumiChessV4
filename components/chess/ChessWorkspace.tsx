@@ -32,6 +32,14 @@ export function ChessWorkspace() {
   const [modeChosen, setModeChosen] = useState(false);
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const requestedMode = searchParams.get('mode');
+
+    if (requestedMode === 'play-vs-ai' || requestedMode === 'analysis' || requestedMode === 'puzzle') {
+      ai.setMode(requestedMode);
+      setModeChosen(true);
+    }
+
     const savedPieceTheme = window.localStorage.getItem('lumichess-piece-theme');
     if (savedPieceTheme) setPieceTheme(savedPieceTheme);
     const savedBoardTheme = window.localStorage.getItem('lumichess-board-theme');
@@ -97,6 +105,7 @@ export function ChessWorkspace() {
 
   const chooseMode = (mode: 'play-vs-ai' | 'analysis' | 'puzzle') => {
     ai.setMode(mode);
+    window.history.replaceState({}, '', `/?mode=${mode}`);
     setModeChosen(true);
   };
 
