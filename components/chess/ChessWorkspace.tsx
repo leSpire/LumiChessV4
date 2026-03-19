@@ -27,6 +27,7 @@ export function ChessWorkspace() {
   const [boardTheme, setBoardTheme] = useState('lumi-classic');
   const [soundTheme, setSoundTheme] = useState<SoundTheme>('classic');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showLegalMoves, setShowLegalMoves] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modeChosen, setModeChosen] = useState(false);
 
@@ -41,12 +42,15 @@ export function ChessWorkspace() {
 
     const savedSoundEnabled = window.localStorage.getItem('lumichess-sound-enabled');
     if (savedSoundEnabled) setSoundEnabled(savedSoundEnabled === 'true');
+    const savedShowLegalMoves = window.localStorage.getItem('lumichess-show-legal-moves');
+    if (savedShowLegalMoves) setShowLegalMoves(savedShowLegalMoves === 'true');
   }, []);
 
   useEffect(() => window.localStorage.setItem('lumichess-piece-theme', pieceTheme), [pieceTheme]);
   useEffect(() => window.localStorage.setItem('lumichess-board-theme', boardTheme), [boardTheme]);
   useEffect(() => window.localStorage.setItem('lumichess-sound-theme', soundTheme), [soundTheme]);
   useEffect(() => window.localStorage.setItem('lumichess-sound-enabled', String(soundEnabled)), [soundEnabled]);
+  useEffect(() => window.localStorage.setItem('lumichess-show-legal-moves', String(showLegalMoves)), [showLegalMoves]);
 
   useEffect(() => {
     const san = game.lastMoveSan;
@@ -201,6 +205,7 @@ export function ChessWorkspace() {
               <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#d9b36c]">Interface</p>
               <label className="mb-1 flex items-center justify-between"><span>Flèches suggestion Stockfish</span><input type="checkbox" checked={ai.showSuggestionArrows} onChange={(evt) => ai.setShowSuggestionArrows(evt.target.checked)} /></label>
               <label className="mb-1 flex items-center justify-between"><span>Afficher menaces</span><input type="checkbox" checked={ai.showThreats} onChange={(evt) => ai.setShowThreats(evt.target.checked)} /></label>
+              <label className="mb-1 flex items-center justify-between"><span>Coups légaux</span><input type="checkbox" checked={showLegalMoves} onChange={(evt) => setShowLegalMoves(evt.target.checked)} /></label>
               <label className="mb-1 flex items-center justify-between"><span>Sons</span><input type="checkbox" checked={soundEnabled} onChange={(evt) => setSoundEnabled(evt.target.checked)} /></label>
             </section>
 
@@ -236,6 +241,7 @@ export function ChessWorkspace() {
           pieceTheme={pieceTheme}
           boardTheme={boardTheme}
           suggestedArrows={ai.mode === 'puzzle' ? [] : suggestedArrows}
+          showLegalMoves={showLegalMoves}
         />
         {game.pendingPromotion && <PromotionDialog color={game.pendingPromotion.color} onSelect={game.handlePromotion} />}
       </div>

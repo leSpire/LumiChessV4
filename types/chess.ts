@@ -39,6 +39,7 @@ export interface ChessBoardProps {
   pieceTheme: string;
   boardTheme: string;
   suggestedArrows?: Array<{ from: Square; to: Square; color?: 'blue' | 'red' }>;
+  showLegalMoves?: boolean;
 }
 
 export interface MoveHistoryEntry extends MoveHistoryRow {}

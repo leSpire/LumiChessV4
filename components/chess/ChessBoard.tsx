@@ -58,7 +58,8 @@ export function ChessBoard({
   onPieceDrop,
   pieceTheme,
   boardTheme,
-  suggestedArrows = []
+  suggestedArrows = [],
+  showLegalMoves = true
 }: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -124,11 +125,11 @@ export function ChessBoard({
   }, [rightDragState]);
 
   return (
-    <section className="w-full max-w-[min(92vw,760px)]" aria-label="Échiquier LumiChess">
-      <div className="relative rounded-3xl border border-[#c6933d33] bg-gradient-to-b from-[#1b1510] to-[#0d0b08] p-3 shadow-board">
+    <section className="w-full max-w-[min(100vw-2rem,820px)]" aria-label="Échiquier LumiChess">
+      <div className="relative rounded-[12px] bg-[#262522] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.22)] sm:p-4">
         <div
           ref={boardRef}
-          className="relative grid aspect-square w-full grid-cols-8 overflow-hidden rounded-2xl border border-[#d3a55b33]"
+          className="relative grid aspect-square w-full grid-cols-8 overflow-hidden rounded-[10px] bg-[#1f1e1b]"
           onContextMenu={(evt) => evt.preventDefault()}
           onPointerMove={(evt) => {
             if (!boardRef.current) return;
@@ -189,6 +190,8 @@ export function ChessBoard({
             const col = index % 8;
             const file = orientation === 'w' ? col : 7 - col;
             const rank = orientation === 'w' ? 7 - row : row;
+            const displayFile = files[col];
+            const displayRank = ranks[row];
             const square = coordsToSquare(file, rank);
 
             const isSelected = selectedSquare === square;
@@ -204,24 +207,43 @@ export function ChessBoard({
                 key={square}
                 type="button"
                 className={clsx(
-                  'group relative flex items-center justify-center transition-all duration-200',
+                  'group relative flex items-center justify-center border-0 outline-none transition-colors duration-100 focus-visible:z-[6] focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-inset',
                   isLightSquare(square)
-                    ? `bg-gradient-to-br ${selectedBoardTheme.lightSquareClass}`
-                    : `bg-gradient-to-br ${selectedBoardTheme.darkSquareClass}`
+                    ? selectedBoardTheme.lightSquareClass
+                    : selectedBoardTheme.darkSquareClass
                 )}
                 onClick={() => onSquareClick(square)}
                 aria-label={`Case ${square}`}
               >
-                {isLastMove && <span className="pointer-events-none absolute inset-0 bg-[#e3b15e33]" />}
-                {isSelected && <span className="pointer-events-none absolute inset-1 rounded-sm border-2 border-[#f1cd8a] shadow-glow" />}
-                {isCheck && <span className="pointer-events-none absolute inset-0 bg-[#d84c4c80]" />}
+                {isLastMove && <span className="pointer-events-none absolute inset-0 bg-[rgba(255,235,59,0.22)]" />}
+                {isSelected && <span className="pointer-events-none absolute inset-0 bg-[rgba(255,215,0,0.28)]" />}
+                {isCheck && <span className="pointer-events-none absolute inset-0 bg-[rgba(220,38,38,0.28)]" />}
                 {isMarked && <span className="pointer-events-none absolute inset-2 rounded-full border-4 border-[#3ea9ffaa]" />}
-                {isTarget && !isCaptureTarget && (
-                  <span className="pointer-events-none absolute h-4 w-4 rounded-full border border-[#4b3a24aa] bg-[#3e2c18aa] shadow-[0_0_14px_rgba(255,220,155,0.6)]" />
+                {showLegalMoves && isTarget && !isCaptureTarget && (
+                  <span className="pointer-events-none absolute h-[22%] w-[22%] rounded-full bg-[rgba(0,0,0,0.18)] transition-opacity duration-100" />
                 )}
-                {isCaptureTarget && <span className="pointer-events-none absolute inset-[10%] rounded-full border-4 border-[#f6d8a5dd]" />}
-                {(row === 7 || row === 0 || col === 0 || col === 7) && (
-                  <span className="pointer-events-none absolute inset-0 ring-1 ring-black/5" />
+                {showLegalMoves && isCaptureTarget && (
+                  <span className="pointer-events-none absolute inset-[10%] rounded-full shadow-[inset_0_0_0_6px_rgba(0,0,0,0.18)]" />
+                )}
+                {col === 0 && (
+                  <span
+                    className={clsx(
+                      'pointer-events-none absolute left-[8%] top-[6%] text-[11px] font-medium leading-none sm:text-xs',
+                      isLightSquare(square) ? selectedBoardTheme.lightCoordinateClass : selectedBoardTheme.darkCoordinateClass
+                    )}
+                  >
+                    {displayRank}
+                  </span>
+                )}
+                {row === 7 && (
+                  <span
+                    className={clsx(
+                      'pointer-events-none absolute bottom-[6%] right-[8%] text-[11px] font-medium leading-none sm:text-xs',
+                      isLightSquare(square) ? selectedBoardTheme.lightCoordinateClass : selectedBoardTheme.darkCoordinateClass
+                    )}
+                  >
+                    {displayFile}
+                  </span>
                 )}
               </button>
             );
@@ -296,7 +318,7 @@ export function ChessBoard({
               <motion.button
                 key={`${piece.square}-${piece.type}-${piece.color}`}
                 type="button"
-                className={clsx('absolute z-10 p-1.5 sm:p-2 touch-none', isDragging ? 'z-20 cursor-grabbing' : 'cursor-grab')}
+                className={clsx('absolute z-10 p-[7%] touch-none outline-none', isDragging ? 'z-20 cursor-grabbing' : 'cursor-grab')}
                 style={
                   isDragging
                     ? {
@@ -306,8 +328,12 @@ export function ChessBoard({
                       }
                     : { width, left, top }
                 }
-                animate={isDragging ? { scale: 1.08 } : { left, top, scale: 1 }}
-                transition={isDragging ? { duration: 0.08 } : { type: 'spring', stiffness: 360, damping: 28, mass: 0.42 }}
+                animate={isDragging ? { scale: 1.03 } : { left, top, scale: 1 }}
+                transition={
+                  isDragging
+                    ? { duration: 0.08 }
+                    : { duration: 0.14, ease: [0.2, 0.8, 0.2, 1] }
+                }
                 onPointerDown={(evt) => {
                   if (evt.button !== 0 || !boardRef.current) return;
                   const canMove = onPiecePointerDown(piece.square);
@@ -322,34 +348,20 @@ export function ChessBoard({
                 }}
                 aria-label={`Pièce ${piece.color === 'w' ? 'blanche' : 'noire'} ${piece.type} sur ${piece.square}`}
               >
-                <ChessPiece type={piece.type} color={piece.color} themeId={pieceTheme} isDragging={isDragging} />
+                <ChessPiece
+                  type={piece.type}
+                  color={piece.color}
+                  themeId={pieceTheme}
+                  isDragging={isDragging}
+                  isSelected={selectedSquare === piece.square}
+                />
               </motion.button>
             );
           })}
-
-          {files.map((file, index) => (
-            <span
-              key={`${file}-coord`}
-              className="pointer-events-none absolute bottom-1 text-[10px] font-medium uppercase tracking-wide text-black/60"
-              style={{ left: `${index * 12.5 + 1.3}%` }}
-            >
-              {file}
-            </span>
-          ))}
-
-          {ranks.map((rank, index) => (
-            <span
-              key={`${rank}-coord`}
-              className="pointer-events-none absolute right-1 text-[10px] font-medium tracking-wide text-black/60"
-              style={{ top: `${index * 12.5 + 1.2}%` }}
-            >
-              {rank}
-            </span>
-          ))}
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between px-1 text-xs text-[#ddc08f]">
+      <div className="mt-3 flex items-center justify-between px-1 text-xs text-[rgba(255,255,255,0.72)]">
         <span>Vue: {orientation === 'w' ? 'Blancs' : 'Noirs'}</span>
         <span>Clic droit: rond/flèche · Drag & drop + clic</span>
       </div>
