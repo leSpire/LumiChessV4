@@ -10,9 +10,10 @@ interface ChessPieceProps {
   color: Color;
   themeId?: string;
   isDragging?: boolean;
+  isSelected?: boolean;
 }
 
-const baseClasses = 'h-full w-full drop-shadow-[0_7px_10px_rgba(0,0,0,0.5)]';
+const baseClasses = 'h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]';
 
 function PieceFrame({ children, color }: { children: React.ReactNode; color: Color }) {
   const white = color === 'w';
@@ -65,7 +66,7 @@ function ClassicPiece({ type, color }: { type: PieceSymbol; color: Color }) {
   );
 }
 
-export function ChessPiece({ type, color, themeId = "classic", isDragging }: ChessPieceProps) {
+export function ChessPiece({ type, color, themeId = "classic", isDragging, isSelected }: ChessPieceProps) {
   const [errored, setErrored] = useState(false);
   const pieceUrl = !errored ? getPieceAssetUrl(themeId, color, type) : null;
 
@@ -74,8 +75,10 @@ export function ChessPiece({ type, color, themeId = "classic", isDragging }: Che
   return (
     <div
       className={clsx(
-        'relative h-full w-full transition-transform duration-200 ease-out',
-        isDragging ? 'scale-110' : 'scale-100 hover:scale-[1.04]'
+        'relative h-full w-full transition duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+        isDragging || isSelected
+          ? 'scale-[1.03] drop-shadow-[0_4px_8px_rgba(0,0,0,0.28)]'
+          : 'scale-100 drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]'
       )}
     >
       {pieceUrl ? (
