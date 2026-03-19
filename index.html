@@ -3,156 +3,761 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LumiChess V4</title>
+    <title>LumiChess V4 — Interface</title>
     <meta
       name="description"
-      content="Page d'accueil statique de LumiChess V4 prête pour un déploiement simple sur Netlify."
+      content="Interface statique de LumiChess V4 dans un unique index.html, prête à être déposée telle quelle sur Netlify."
     />
     <style>
       :root {
         color-scheme: dark;
-        --bg: #09090f;
-        --panel: rgba(17, 24, 39, 0.82);
-        --text: #f3f4f6;
-        --muted: #9ca3af;
-        --accent: #8b5cf6;
-        --accent-2: #22d3ee;
-        --border: rgba(255, 255, 255, 0.12);
+        --bg: #090704;
+        --bg-soft: #14100b;
+        --panel: rgba(20, 16, 11, 0.92);
+        --panel-2: rgba(12, 9, 7, 0.96);
+        --border: rgba(198, 147, 61, 0.28);
+        --border-strong: rgba(217, 179, 108, 0.55);
+        --text: #f4e4c9;
+        --muted: #cbb58f;
+        --muted-2: #9f8964;
+        --gold: #d9b36c;
+        --gold-soft: rgba(217, 179, 108, 0.16);
+        --accent: #7c3aed;
+        --success: #16a34a;
+        --shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+        --radius: 24px;
+        --square-light: #f0d9b5;
+        --square-dark: #b58863;
+        --square-last: rgba(255, 235, 59, 0.26);
+        --square-selected: rgba(255, 215, 0, 0.3);
       }
 
       * {
         box-sizing: border-box;
       }
 
-      body {
+      html, body {
         margin: 0;
-        min-height: 100vh;
-        font-family: Inter, Arial, sans-serif;
+        min-height: 100%;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background:
-          radial-gradient(circle at top, rgba(139, 92, 246, 0.24), transparent 32%),
-          radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.18), transparent 28%),
-          var(--bg);
+          radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 28%),
+          radial-gradient(circle at bottom right, rgba(217, 179, 108, 0.14), transparent 24%),
+          linear-gradient(180deg, #090704 0%, #120d08 100%);
         color: var(--text);
-        display: grid;
-        place-items: center;
+      }
+
+      body {
         padding: 24px;
       }
 
-      .card {
-        width: min(720px, 100%);
+      .shell {
+        max-width: 1440px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 20px;
         border: 1px solid var(--border);
-        background: var(--panel);
+        border-radius: 20px;
+        background: rgba(10, 8, 6, 0.72);
         backdrop-filter: blur(18px);
-        border-radius: 24px;
-        padding: 40px 28px;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+        box-shadow: var(--shadow);
       }
 
-      .badge {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(139, 92, 246, 0.18);
-        color: #ddd6fe;
-        font-size: 0.875rem;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
       }
 
-      h1 {
-        margin: 18px 0 12px;
-        font-size: clamp(2.5rem, 5vw, 4.4rem);
-        line-height: 1;
+      .brand-mark {
+        width: 46px;
+        height: 46px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #d9b36c, #7c3aed);
+        color: white;
+        font-size: 1.35rem;
+        box-shadow: 0 12px 30px rgba(124, 58, 237, 0.35);
       }
 
-      p {
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(1.4rem, 2vw, 2rem);
+      }
+
+      .brand p,
+      .hint,
+      .small,
+      .muted {
         margin: 0;
         color: var(--muted);
-        font-size: 1.05rem;
-        line-height: 1.7;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .pill,
+      .button,
+      .mode-chip,
+      .setting-select,
+      .range-card,
+      .mini-stat,
+      .move {
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: var(--text);
+      }
+
+      .pill,
+      .button,
+      .mode-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 10px 14px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .pill.active,
+      .button.primary,
+      .mode-chip.active {
+        background: linear-gradient(135deg, rgba(217, 179, 108, 0.92), rgba(124, 58, 237, 0.82));
+        color: #fff7e8;
+        border-color: transparent;
+      }
+
+      .workspace {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        align-items: start;
+      }
+
+      .board-column {
+        position: relative;
+      }
+
+      .settings-toggle {
+        width: fit-content;
+        margin-left: auto;
+        margin-bottom: 12px;
+      }
+
+      .settings-panel,
+      .panel,
+      .overlay-card {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .settings-panel {
+        width: min(100%, 360px);
+        margin: 0 0 16px auto;
+        padding: 18px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .settings-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .settings-grid h2,
+      .panel h2,
+      .overlay-card h2 {
+        margin: 0 0 10px;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--gold);
+      }
+
+      .setting-row,
+      .toggle-row,
+      .range-head,
+      .player-card,
+      .status-list li,
+      .header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .setting-select,
+      input[type="range"],
+      .input-mock {
+        width: 100%;
+      }
+
+      .setting-select,
+      .input-mock {
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+      }
+
+      .board-shell {
+        position: relative;
+        padding: 14px;
+        border-radius: 18px;
+        background: #262522;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      }
+
+      .board {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        aspect-ratio: 1;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #1f1e1b;
+      }
+
+      .square {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .square.light { background: var(--square-light); }
+      .square.dark { background: var(--square-dark); }
+      .square.last::before,
+      .square.selected::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+      }
+      .square.last::before { background: var(--square-last); }
+      .square.selected::before { background: var(--square-selected); }
+
+      .coord-file,
+      .coord-rank {
+        position: absolute;
+        font-size: 0.68rem;
+        font-weight: 700;
+        opacity: 0.72;
+      }
+
+      .coord-file { right: 6px; bottom: 4px; }
+      .coord-rank { left: 6px; top: 4px; }
+
+      .piece {
+        position: relative;
+        z-index: 1;
+        font-size: clamp(1.2rem, 3vw, 2.5rem);
+        filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.28));
+      }
+
+      .board-overlay {
+        position: absolute;
+        inset: 14px;
+        pointer-events: none;
+      }
+
+      .arrow {
+        position: absolute;
+        height: 6px;
+        border-radius: 999px;
+        transform-origin: left center;
+        opacity: 0.9;
+      }
+
+      .arrow.blue {
+        left: 18%; top: 66%; width: 24%; transform: rotate(-36deg);
+        background: linear-gradient(90deg, rgba(80, 180, 255, 0.1), rgba(80, 180, 255, 0.95));
+      }
+
+      .arrow.red {
+        left: 56%; top: 28%; width: 18%; transform: rotate(116deg);
+        background: linear-gradient(90deg, rgba(255, 120, 120, 0.08), rgba(255, 120, 120, 0.95));
+      }
+
+      .arrow::after {
+        content: "";
+        position: absolute;
+        right: -1px;
+        top: 50%;
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 14px solid currentColor;
+        transform: translateY(-50%);
+      }
+
+      .arrow.blue, .arrow.blue::after { color: rgba(80, 180, 255, 0.95); }
+      .arrow.red, .arrow.red::after { color: rgba(255, 120, 120, 0.95); }
+
+      .status-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .mini-stat {
+        border-radius: 16px;
+        padding: 14px;
+      }
+
+      .mini-stat strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 1rem;
+        color: #fff7e8;
+      }
+
+      .panel {
+        padding: 18px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .header-row .badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: var(--gold-soft);
+        color: #f8e5bd;
+      }
+
+      .panel-section {
+        border-radius: 18px;
+        border: 1px solid rgba(198, 147, 61, 0.16);
+        background: rgba(21, 16, 11, 0.78);
+        padding: 14px;
+      }
+
+      .mode-list,
+      .actions,
+      .moves,
+      .checks,
+      .difficulty-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .difficulty-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .range-card {
+        border-radius: 16px;
+        padding: 12px;
+      }
+
+      .range-track {
+        margin-top: 10px;
+        height: 8px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #d9b36c 0 72%, rgba(255, 255, 255, 0.08) 72% 100%);
       }
 
       .actions {
-        margin-top: 28px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .button {
-        text-decoration: none;
-        color: var(--text);
-        padding: 14px 18px;
+        justify-content: center;
         border-radius: 14px;
-        border: 1px solid var(--border);
-        transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
       }
 
-      .button.primary {
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        border: none;
-        font-weight: 700;
+      .moves {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .button:hover {
-        transform: translateY(-1px);
-        border-color: rgba(255, 255, 255, 0.25);
+      .move {
+        padding: 10px 12px;
+        border-radius: 12px;
       }
 
-      .grid {
-        margin-top: 32px;
+      .status-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 14px;
+        gap: 8px;
       }
 
-      .tile {
-        border: 1px solid var(--border);
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-right: 8px;
+      }
+
+      .dot.green { background: var(--success); box-shadow: 0 0 18px rgba(22, 163, 74, 0.75); }
+      .dot.gold { background: var(--gold); box-shadow: 0 0 18px rgba(217, 179, 108, 0.55); }
+      .dot.purple { background: var(--accent); box-shadow: 0 0 18px rgba(124, 58, 237, 0.6); }
+
+      .checklist {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #ead9bb;
+      }
+
+      .toggle {
+        width: 44px;
+        height: 26px;
+        border-radius: 999px;
+        background: rgba(217, 179, 108, 0.26);
+        position: relative;
+        border: 1px solid rgba(217, 179, 108, 0.25);
+      }
+
+      .toggle::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 21px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f8e8c8, #d9b36c);
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(9, 7, 4, 0.88);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        pointer-events: none;
+      }
+
+      .overlay-card {
+        width: min(100%, 760px);
+        padding: 28px;
+        text-align: center;
+      }
+
+      .overlay-actions {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .footer-note {
+        padding: 18px 20px;
         border-radius: 18px;
-        padding: 18px;
-        background: rgba(255, 255, 255, 0.03);
-      }
-
-      .tile strong {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 1rem;
-      }
-
-      .tile span {
+        border: 1px dashed rgba(217, 179, 108, 0.28);
+        background: rgba(12, 9, 7, 0.5);
         color: var(--muted);
-        font-size: 0.95rem;
+      }
+
+      @media (max-width: 1100px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .settings-panel {
+          margin-right: 0;
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 720px) {
+        body { padding: 14px; }
+        .topbar,
+        .overlay-card,
+        .panel,
+        .settings-panel { padding: 16px; }
+        .status-strip,
+        .overlay-actions,
+        .actions,
+        .difficulty-grid,
+        .moves { grid-template-columns: 1fr; }
+        .toolbar { justify-content: stretch; }
       }
     </style>
   </head>
   <body>
-    <main class="card">
-      <span class="badge">Netlify Ready</span>
-      <h1>LumiChess V4</h1>
-      <p>
-        Cette page statique a été ajoutée pour te permettre de publier rapidement le projet sur Netlify,
-        même sans pipeline Next.js. Tu peux l'utiliser telle quelle pour une mise en ligne immédiate.
-      </p>
-
-      <div class="actions">
-        <a class="button primary" href="https://www.netlify.com/" target="_blank" rel="noreferrer">Publier sur Netlify</a>
-        <a class="button" href="./">Recharger la page</a>
-      </div>
-
-      <section class="grid" aria-label="Points forts">
-        <article class="tile">
-          <strong>Déploiement simple</strong>
-          <span>Un seul fichier HTML à la racine pour un hébergement statique immédiat.</span>
-        </article>
-        <article class="tile">
-          <strong>Design propre</strong>
-          <span>Une interface légère avec un style moderne inspiré de l'univers du jeu d'échecs.</span>
-        </article>
-        <article class="tile">
-          <strong>Base évolutive</strong>
-          <span>Tu peux remplacer ce contenu plus tard par l'export de ton application complète.</span>
-        </article>
+    <div class="overlay" aria-hidden="true">
+      <section class="overlay-card">
+        <p class="small" style="text-transform: uppercase; letter-spacing: 0.2em; color: var(--gold);">Bienvenue</p>
+        <h2 style="margin: 8px 0 0; font-size: clamp(1.8rem, 4vw, 2.5rem);">Choisis ton mode de jeu</h2>
+        <p class="hint" style="margin-top: 10px; line-height: 1.7;">
+          L’interface LumiChess est maintenant directement dans ce <code>index.html</code>.
+          Tu as donc bien un fichier d’entrée unique, sans ajouter de config Netlify spécifique.
+        </p>
+        <div class="overlay-actions">
+          <div class="mode-chip active">♟️ Jouer contre IA</div>
+          <div class="mode-chip">🧠 Analyse libre</div>
+          <div class="mode-chip">🧩 Puzzles tactiques</div>
+        </div>
       </section>
+    </div>
+
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">♞</div>
+          <div>
+            <h1>LumiChess V4</h1>
+            <p>Interface d’échecs immersive dans un unique fichier HTML.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="pill active">● Interface prête</div>
+          <div class="pill">🗂️ index.html unique</div>
+          <div class="pill">🌐 Compatible hébergement statique</div>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <div class="board-column">
+          <div class="button settings-toggle">⚙️ Paramètres</div>
+
+          <aside class="settings-panel">
+            <section class="settings-grid">
+              <div>
+                <h2>Mode de jeu</h2>
+                <div class="difficulty-grid">
+                  <div class="mode-chip active">Contre IA</div>
+                  <div class="mode-chip">Analyse</div>
+                  <div class="mode-chip">Puzzle</div>
+                </div>
+              </div>
+
+              <div>
+                <h2>Ordinateur</h2>
+                <div class="range-card">
+                  <div class="range-head">
+                    <span>Niveau IA</span>
+                    <strong>Confirmé</strong>
+                  </div>
+                  <div class="input-mock">Profondeur 18 • Threads 4 • MultiPV 2</div>
+                  <div class="range-track"></div>
+                </div>
+              </div>
+
+              <div>
+                <h2>Interface</h2>
+                <div class="checklist">
+                  <div class="check"><span>Flèches suggestion Stockfish</span><span class="toggle"></span></div>
+                  <div class="check"><span>Afficher menaces</span><span class="toggle"></span></div>
+                  <div class="check"><span>Coups légaux</span><span class="toggle"></span></div>
+                  <div class="check"><span>Sons</span><span class="toggle"></span></div>
+                </div>
+              </div>
+
+              <div>
+                <h2>Échiquier</h2>
+                <div class="difficulty-grid">
+                  <div class="input-mock">Pièces : Classic</div>
+                  <div class="input-mock">Plateau : Lumi Classic</div>
+                  <div class="input-mock" style="grid-column: 1 / -1;">Thème sonore : Classic</div>
+                </div>
+              </div>
+            </section>
+          </aside>
+
+          <section class="board-shell" aria-label="Échiquier LumiChess">
+            <div class="board-overlay" aria-hidden="true">
+              <div class="arrow blue"></div>
+              <div class="arrow red"></div>
+            </div>
+            <div class="board">
+              <div class="square light"><span class="coord-rank">8</span><span class="piece">♜</span></div>
+              <div class="square dark"><span class="piece">♞</span></div>
+              <div class="square light"><span class="piece">♝</span></div>
+              <div class="square dark"><span class="piece">♛</span></div>
+              <div class="square light"><span class="piece">♚</span></div>
+              <div class="square dark"><span class="piece">♝</span></div>
+              <div class="square light"><span class="piece">♞</span></div>
+              <div class="square dark"><span class="piece">♜</span></div>
+
+              <div class="square dark"><span class="piece">♟</span></div>
+              <div class="square light"><span class="piece">♟</span></div>
+              <div class="square dark"><span class="piece">♟</span></div>
+              <div class="square light"><span class="piece">♟</span></div>
+              <div class="square dark"><span class="piece">♟</span></div>
+              <div class="square light"><span class="piece">♟</span></div>
+              <div class="square dark"><span class="piece">♟</span></div>
+              <div class="square light"><span class="piece">♟</span></div>
+
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark last"><span class="piece">♙</span></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark selected"><span class="piece">♘</span></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+              <div class="square dark"></div>
+              <div class="square light"></div>
+
+              <div class="square light"><span class="piece">♙</span></div>
+              <div class="square dark"><span class="piece">♙</span></div>
+              <div class="square light"><span class="piece">♙</span></div>
+              <div class="square dark"><span class="piece">♙</span></div>
+              <div class="square light"></div>
+              <div class="square dark"><span class="piece">♙</span></div>
+              <div class="square light"><span class="piece">♙</span></div>
+              <div class="square dark"><span class="piece">♙</span></div>
+
+              <div class="square dark"><span class="coord-file">a</span><span class="piece">♖</span></div>
+              <div class="square light"><span class="coord-file">b</span><span class="piece">♘</span></div>
+              <div class="square dark"><span class="coord-file">c</span><span class="piece">♗</span></div>
+              <div class="square light"><span class="coord-file">d</span><span class="piece">♕</span></div>
+              <div class="square dark"><span class="coord-file">e</span><span class="piece">♔</span></div>
+              <div class="square light"><span class="coord-file">f</span><span class="piece">♗</span></div>
+              <div class="square dark"><span class="coord-file">g</span><span class="piece">♘</span></div>
+              <div class="square light"><span class="coord-file">h</span><span class="piece">♖</span></div>
+            </div>
+          </section>
+
+          <section class="status-strip">
+            <article class="mini-stat">
+              <span class="muted">Tour</span>
+              <strong>Blancs à jouer</strong>
+            </article>
+            <article class="mini-stat">
+              <span class="muted">Dernier coup</span>
+              <strong>e2 → e4</strong>
+            </article>
+            <article class="mini-stat">
+              <span class="muted">Moteur</span>
+              <strong>Stockfish prêt</strong>
+            </article>
+            <article class="mini-stat">
+              <span class="muted">Évaluation</span>
+              <strong>+0.7</strong>
+            </article>
+          </section>
+        </div>
+
+        <aside class="panel">
+          <section class="panel-section">
+            <div class="header-row">
+              <div>
+                <h2>Session</h2>
+                <p class="small">Jouer contre IA • Blanc</p>
+              </div>
+              <span class="badge">Live UI</span>
+            </div>
+
+            <div class="mode-list">
+              <div class="player-card"><span>Joueur</span><strong>Humain</strong></div>
+              <div class="player-card"><span>Adversaire</span><strong>IA niveau confirmé</strong></div>
+              <div class="player-card"><span>Orientation</span><strong>Blancs en bas</strong></div>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>Actions</h2>
+            <div class="actions">
+              <div class="button primary">Nouvelle partie</div>
+              <div class="button">Annuler</div>
+              <div class="button">Inverser</div>
+              <div class="button">Reset IA</div>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>Analyse moteur</h2>
+            <ul class="status-list">
+              <li><span><span class="dot green"></span>Statut moteur</span><strong>Prêt</strong></li>
+              <li><span><span class="dot gold"></span>Meilleur coup</span><strong>Cf3</strong></li>
+              <li><span><span class="dot purple"></span>Profondeur</span><strong>18</strong></li>
+              <li><span><span class="dot gold"></span>PV</span><strong>1. e4 e5 2. Cf3 Cc6</strong></li>
+            </ul>
+          </section>
+
+          <section class="panel-section">
+            <h2>Historique</h2>
+            <div class="moves">
+              <div class="move">1. e4</div>
+              <div class="move">... e5</div>
+              <div class="move">2. Cf3</div>
+              <div class="move">... Cc6</div>
+              <div class="move">3. Fb5</div>
+              <div class="move">... a6</div>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>Ce qui change ici</h2>
+            <div class="checklist">
+              <div class="check"><span>L’UI est directement dans <code>index.html</code></span><strong>✓</strong></div>
+              <div class="check"><span>Pas de landing page Netlify séparée</span><strong>✓</strong></div>
+              <div class="check"><span>Le fichier racine peut servir d’entrée statique</span><strong>✓</strong></div>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <footer class="footer-note">
+        Cette version répond à ta demande : avoir simplement un <code>index.html</code> qui porte l’interface,
+        au lieu d’une page d’accueil de déploiement Netlify. Si tu veux ensuite, on pourra aussi transformer
+        davantage l’UI actuelle React/Next pour qu’elle soit exportable en statique de façon plus fidèle.
+      </footer>
     </main>
   </body>
 </html>
