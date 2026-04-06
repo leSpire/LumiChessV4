@@ -9,6 +9,7 @@ export default function HomePage() {
         <h2 className="mb-3 text-lg font-semibold text-white">Newsletter</h2>
         <form
           name="newsletter"
+          action="/merci"
           method="POST"
           data-netlify="true"
           netlify-honeypot="bot-field"
